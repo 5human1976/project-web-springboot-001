@@ -12,13 +12,19 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
  * WARファイルとして配備したSpring Bootアプリケーションの初期化に使用します。
  *
  * 【作成日】2026-09-23
- * 【最終更新日】2026-09-23
+ * 【最終更新日】2026-09-24
  *
  * @author masa
  * @version 1.0
  */
 public class ServletInitializer extends SpringBootServletInitializer {
 
+	/**
+	 * 外部のサーブレットコンテナで起動できるよう、アプリケーションの構成元を設定します。
+	 *
+	 * @param application サーブレットコンテナでの起動に使用するアプリケーションビルダー
+	 * @return 起動クラスを構成元として設定したアプリケーションビルダー
+	 */
 	@Override
 	protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
 		// 起動クラスを構成元として登録し、設定済みのアプリケーションビルダーを返します。

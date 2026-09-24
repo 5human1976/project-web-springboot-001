@@ -12,7 +12,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * アプリケーションの設定や依存関係による初期化エラーの検出に使用します。
  *
  * 【作成日】2026-09-23
- * 【最終更新日】2026-09-23
+ * 【最終更新日】2026-09-24
  *
  * @author masa
  * @version 1.0
@@ -20,6 +20,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 class ProjectWebSpringboot001ApplicationTests {
 
+	/**
+	 * アプリケーションコンテキストが正常に初期化できることを確認します。
+	 */
 	@Test
 	void contextLoads() {
 		// テスト実行前にSpringがコンテキストを読み込むため、追加処理なしで正常に初期化できることを確認します。

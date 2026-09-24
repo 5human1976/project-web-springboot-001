@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
  * WebアプリケーションのHTTP応答の動作確認に使用します。
  *
  * 【作成日】2026-09-23
- * 【最終更新日】2026-09-23
+ * 【最終更新日】2026-09-24
  *
  * @author masa
  * @version 1.0
@@ -20,6 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HelloController {
 
+    /**
+     * ルートパスへのGETリクエストに対し、動作確認用のメッセージを返します。
+     *
+     * @return HTTPレスポンス本文となる "Hello, World!" 文字列
+     */
     @GetMapping("/")
     public String hello() {
         // HTTPレスポンスの本文として "Hello, World!" を返します。

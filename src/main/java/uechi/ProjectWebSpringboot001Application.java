@@ -12,7 +12,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * mainメソッドから実行する際の起動処理の入口として使用します。
  *
  * 【作成日】2026-09-23
- * 【最終更新日】2026-09-23
+ * 【最終更新日】2026-09-24
  *
  * @author masa
  * @version 1.0
@@ -20,6 +20,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class ProjectWebSpringboot001Application {
 
+	/**
+	 * Spring BootのWebアプリケーションを起動します。
+	 *
+	 * @param args アプリケーション起動時のコマンドライン引数
+	 */
 	public static void main(String[] args) {
 		// 起動クラスとコマンドライン引数を渡し、Spring Bootアプリケーションを起動します。
 		SpringApplication.run(ProjectWebSpringboot001Application.class, args);

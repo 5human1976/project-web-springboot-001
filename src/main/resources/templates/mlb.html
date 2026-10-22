@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
@@ -10,12 +10,17 @@
 <body>
     <main>
         <h1>MLB 試合情報</h1>
-        <p>
-            <label for="target-date">対象日</label>
-            <input type="date" id="target-date" name="targetDate">
+        <form th:action="@{/mlb}" method="get">
+            <p>
+                <label for="target-date">対象日</label>
+                <input type="date" id="target-date" name="targetDate" th:value="${targetDate}">
+            </p>
+            <button type="submit">試合情報を検索</button>
+        </form>
+        <p th:if="${targetDate != null}">
+            指定した対象日：<span th:text="${targetDate}"></span>
         </p>
-        <button type="button">試合情報を検索</button>
-        <p>※検索機能は次のステップで実装します。</p>
+        <p>※MLB試合情報の取得は次のステップで実装します。</p>
     </main>
 </body>
 

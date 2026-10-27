@@ -20,7 +20,10 @@
         <p th:if="${targetDate != null}">
             指定した対象日：<span th:text="${targetDate}"></span>
         </p>
-        <p>※MLB試合情報の取得は次のステップで実装します。</p>
+        <p th:if="${gameCount != null}">
+            取得試合数：<span th:text="${gameCount}"></span>
+        </p>
+        <p th:if="${errorMessage != null}" th:text="${errorMessage}"></p>
     </main>
 </body>
 

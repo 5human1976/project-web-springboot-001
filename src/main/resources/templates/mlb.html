@@ -5,6 +5,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MLB 試合情報</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            text-align: left;
+        }
+
+        tbody tr:hover {
+            background-color: #f8f8f8;
+        }
+        .vs-mark {
+            text-align: center;
+            width: 24px;
+        }
+    </style>
 </head>
 
 <body>
@@ -23,6 +48,37 @@
         <p th:if="${gameCount != null}">
             取得試合数：<span th:text="${gameCount}"></span>
         </p>
+        <p th:if="${games != null and #lists.isEmpty(games)}">
+            対象日の試合はありません。
+        </p>
+        <table th:if="${games != null and !#lists.isEmpty(games)}">
+            <thead>
+                <tr>
+                    <th scope="col">開始日</th>
+                    <th scope="col">開始時刻（JST）</th>
+                    <th scope="col">ビジターチーム</th>
+                    <th scope="col" aria-label="対戦"></th>
+                    <th scope="col">ホームチーム</th>
+                    <th scope="col">試合状況</th>
+                    <th scope="col">球場</th>
+                    <th scope="col">シリーズ</th>
+                    <th scope="col">シリーズ内試合番号</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="game : ${games}">
+                    <td th:text="${#strings.substring(game.gameDateJst, 0, 10)}"></td>
+                    <td th:text="${#strings.substring(game.gameDateJst, 11, 16)}"></td>
+                    <td th:text="${game.awayTeam}"></td>
+                    <td class="vs-mark">VS</td>
+                    <td th:text="${game.homeTeam}"></td>
+                    <td th:text="${game.status}"></td>
+                    <td th:text="${game.venue}"></td>
+                    <td th:text="${game.seriesDescription}"></td>
+                    <td th:text="${game.seriesGameNumber != null ? game.seriesGameNumber : '-'}"></td>
+                </tr>
+            </tbody>
+        </table>
         <p th:if="${errorMessage != null}" th:text="${errorMessage}"></p>
     </main>
 </body>

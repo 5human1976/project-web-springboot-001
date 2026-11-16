@@ -29,11 +29,11 @@ import tools.jackson.databind.json.JsonMapper;
  * MlbApiService.java
  *
  * 【概要】
- * MLB Stats APIから試合情報を取得し、日本時間で対象日に開始する試合を返すクラスです。
+ * MLB Stats APIから対象日の試合一覧や1試合の基本詳細情報を取得するクラスです。
  * API通信とJSON解析、日時変換、重複排除を担当します。
  *
  * 【作成日】2026-10-27
- * 【最終更新日】2026-10-27
+ * 【最終更新日】2026-11-17
  *
  * @author masa
  * @version 1.0
@@ -43,6 +43,9 @@ public class MlbApiService {
 
     // MLBの試合日程を取得するAPIのURLを定義します。
     private static final String SCHEDULE_URL = "https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=";
+
+    // 試合IDを指定して詳細情報を取得するAPIのベースURLを定義します。
+    private static final String GAME_DETAIL_URL = "https://statsapi.mlb.com/api/v1.1/game/";
 
     // 試合の開始日時を変換する日本のタイムゾーンを定義します。
     private static final ZoneId JST = ZoneId.of("Asia/Tokyo");
@@ -157,5 +160,68 @@ public class MlbApiService {
 
         // 該当する試合がなければ空のリストを正常結果として返します。
         return games;
+    }
+
+    /**
+     * 指定された試合の基本詳細情報を取得し、開始日時を日本時間にして返します。
+     * 得点が未設定の場合はnullを保持します。
+     *
+     * @param gamePk MLB APIで試合を識別するID
+     * @return 詳細画面で使用する試合の基本情報
+     * @throws IllegalStateException API通信、JSON解析、日時変換に失敗した場合
+     */
+    public MlbGameDetail getGameDetail(long gamePk) {
+        try {
+            // 既存のHTTPクライアントで詳細APIへアクセスし、20秒のタイムアウトを設定します。
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(GAME_DETAIL_URL + gamePk + "/feed/live"))
+                    .timeout(Duration.ofSeconds(20))
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            // HTTPステータスが200以外の場合は取得失敗として処理します。
+            if (response.statusCode() != 200) {
+                throw new IOException("MLB APIのHTTPステータス: " + response.statusCode());
+            }
+
+            // JSONを解析し、必須の試合IDが含まれていることを確認します。
+            JsonNode root = jsonMapper.readTree(response.body());
+            if (root == null || !root.path("gamePk").isIntegralNumber()
+                    || root.path("gamePk").asLong(0) <= 0) {
+                throw new IOException("MLB APIの試合IDがありません。");
+            }
+            long responseGamePk = root.path("gamePk").asLong(0);
+            JsonNode gameData = root.path("gameData");
+
+            // 必須のUTC開始日時を日本時間へ変換し、一覧と同じ書式に整形します。
+            String dateTime = gameData.path("datetime").path("dateTime").asString("");
+            String gameDateJst = Instant.parse(dateTime).atZone(JST).format(JST_FORMAT);
+
+            // 試合の基本情報を取得し、未設定の文字列にはハイフンを設定します。
+            String awayTeam = gameData.path("teams").path("away").path("name").asString("-");
+            String homeTeam = gameData.path("teams").path("home").path("name").asString("-");
+            String status = gameData.path("status").path("detailedState").asString("-");
+            String venue = gameData.path("venue").path("name").asString("-");
+
+            // 得点が整数で存在する場合だけ値を取得し、未設定の場合はnullを保持します。
+            JsonNode scoreTeams = root.path("liveData").path("linescore").path("teams");
+            JsonNode awayRuns = scoreTeams.path("away").path("runs");
+            JsonNode homeRuns = scoreTeams.path("home").path("runs");
+            Integer awayScore = awayRuns.isIntegralNumber() ? awayRuns.asInt() : null;
+            Integer homeScore = homeRuns.isIntegralNumber() ? homeRuns.asInt() : null;
+
+            // 取得した基本情報を詳細画面用のオブジェクトにまとめて返します。
+            return new MlbGameDetail(responseGamePk, gameDateJst, awayTeam, awayScore,
+                    homeTeam, homeScore, status, venue);
+        } catch (InterruptedException e) {
+            // 通信の中断状態を復元し、呼び出し元が扱える例外として通知します。
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("MLB APIへの通信が中断されました。", e);
+        } catch (IOException | JacksonException | DateTimeException e) {
+            // 通信、JSON解析、日時変換の失敗をControllerに通知します。
+            throw new IllegalStateException("MLB試合詳細情報の取得に失敗しました。", e);
+        }
     }
 }

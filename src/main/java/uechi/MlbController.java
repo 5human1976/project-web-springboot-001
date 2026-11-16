@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestParam;
  *
  * 【概要】
  * /mlbへのGETリクエストに対してMLB試合情報の画面を表示するクラスです。
- * 対象日の検索結果やURLで指定された試合IDをThymeleafの画面に渡します。
+ * 対象日の試合一覧や指定された試合の詳細情報を取得し、Thymeleafの画面に渡します。
  *
  * 【作成日】2026-10-21
- * 【最終更新日】2026-11-16
+ * 【最終更新日】2026-11-17
  *
  * @author masa
  * @version 1.0
@@ -73,7 +73,7 @@ public class MlbController {
     }
 
     /**
-     * URLで指定された試合IDを画面に渡し、試合詳細のビュー名を返します。
+     * URLで指定された試合の詳細情報を画面に渡し、試合詳細のビュー名を返します。
      *
      * @param gamePk URLのパスに含まれるMLBの試合識別ID
      * @param model 画面に渡すデータを保持するモデル
@@ -81,8 +81,15 @@ public class MlbController {
      */
     @GetMapping("/mlb/game/{gamePk}")
     public String detail(@PathVariable("gamePk") long gamePk, Model model) {
-        // URLのパスから受け取った試合IDをモデルに設定し、詳細画面に渡します。
-        model.addAttribute("gamePk", gamePk);
+        try {
+            // URLの試合IDをServiceへ渡し、取得した詳細情報をモデルに設定します。
+            MlbGameDetail gameDetail = mlbApiService.getGameDetail(gamePk);
+            model.addAttribute("gameDetail", gameDetail);
+        } catch (IllegalStateException e) {
+            // 取得に失敗した場合は試合IDとエラーメッセージを詳細画面へ渡します。
+            model.addAttribute("gamePk", gamePk);
+            model.addAttribute("errorMessage", "MLB試合詳細情報の取得に失敗しました。");
+        }
 
         // Thymeleafでtemplates/mlb-detail.htmlを表示するためのビュー名を返します。
         return "mlb-detail";

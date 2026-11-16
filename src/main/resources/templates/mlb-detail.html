@@ -10,7 +10,21 @@
 <body>
     <main>
         <h1>MLB 試合詳細</h1>
-        <p>gamePk：<span th:text="${gamePk}"></span></p>
+        <section th:if="${gameDetail != null}">
+            <p>gamePk：<span th:text="${gameDetail.gamePk}"></span></p>
+            <p>開始日時：<span th:text="${gameDetail.gameDateJst}"></span> JST</p>
+            <p>
+                <span th:text="${gameDetail.awayTeam}"></span>
+                <span th:text="${gameDetail.awayScore != null ? gameDetail.awayScore : '-'}"></span>
+                VS
+                <span th:text="${gameDetail.homeScore != null ? gameDetail.homeScore : '-'}"></span>
+                <span th:text="${gameDetail.homeTeam}"></span>
+            </p>
+            <p>試合状況：<span th:text="${gameDetail.status}"></span></p>
+            <p>球場：<span th:text="${gameDetail.venue}"></span></p>
+        </section>
+        <p th:if="${errorMessage != null}">gamePk：<span th:text="${gamePk}"></span></p>
+        <p th:if="${errorMessage != null}" th:text="${errorMessage}"></p>
         <a th:href="@{/mlb}">← 試合一覧へ戻る</a>
     </main>
 </body>

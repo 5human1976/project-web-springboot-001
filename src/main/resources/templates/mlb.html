@@ -63,6 +63,7 @@
                     <th scope="col">球場</th>
                     <th scope="col">シリーズ</th>
                     <th scope="col">シリーズ内試合番号</th>
+                    <th scope="col">詳細</th>
                 </tr>
             </thead>
             <tbody>
@@ -76,6 +77,9 @@
                     <td th:text="${game.venue}"></td>
                     <td th:text="${game.seriesDescription}"></td>
                     <td th:text="${game.seriesGameNumber != null ? game.seriesGameNumber : '-'}"></td>
+                    <td>
+                        <a th:href="@{/mlb/game/{gamePk}(gamePk=${game.gamePk})}">詳細</a>
+                    </td>
                 </tr>
             </tbody>
         </table>

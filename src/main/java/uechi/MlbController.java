@@ -7,6 +7,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
@@ -15,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestParam;
  *
  * 【概要】
  * /mlbへのGETリクエストに対してMLB試合情報の画面を表示するクラスです。
- * 対象日の試合情報をServiceから取得し、検索結果をThymeleafの画面に渡します。
+ * 対象日の検索結果やURLで指定された試合IDをThymeleafの画面に渡します。
  *
  * 【作成日】2026-10-21
- * 【最終更新日】2026-10-27
+ * 【最終更新日】2026-11-16
  *
  * @author masa
  * @version 1.0
@@ -69,5 +70,21 @@ public class MlbController {
 
         // Thymeleafでtemplates/mlb.htmlを表示するためのビュー名を返します。
         return "mlb";
+    }
+
+    /**
+     * URLで指定された試合IDを画面に渡し、試合詳細のビュー名を返します。
+     *
+     * @param gamePk URLのパスに含まれるMLBの試合識別ID
+     * @param model 画面に渡すデータを保持するモデル
+     * @return 試合詳細のテンプレートを指定するビュー名
+     */
+    @GetMapping("/mlb/game/{gamePk}")
+    public String detail(@PathVariable("gamePk") long gamePk, Model model) {
+        // URLのパスから受け取った試合IDをモデルに設定し、詳細画面に渡します。
+        model.addAttribute("gamePk", gamePk);
+
+        // Thymeleafでtemplates/mlb-detail.htmlを表示するためのビュー名を返します。
+        return "mlb-detail";
     }
 }

@@ -1,12 +1,14 @@
 package uechi;
 
+import java.util.List;
+
 /**
  * 【ソースファイル名】
  * MlbGameDetail.java
  *
  * 【概要】
  * MLBの1試合の基本詳細情報を保持するクラスです。
- * Serviceが取得したチーム名や得点、開始日時を詳細画面へ渡すために使用します。
+ * Serviceが取得した基本情報とイニング別得点、R・H・Eを詳細画面へ渡すために使用します。
  *
  * 【作成日】2026-11-17
  * 【最終更新日】2026-11-17
@@ -40,6 +42,21 @@ public class MlbGameDetail {
     /** 試合会場名。 */
     private final String venue;
 
+    /** APIの順序で保持するイニング別得点。 */
+    private final List<MlbInningScore> innings;
+
+    /** ビジターチームの安打数。未設定の場合はnull。 */
+    private final Integer awayHits;
+
+    /** ビジターチームの失策数。未設定の場合はnull。 */
+    private final Integer awayErrors;
+
+    /** ホームチームの安打数。未設定の場合はnull。 */
+    private final Integer homeHits;
+
+    /** ホームチームの失策数。未設定の場合はnull。 */
+    private final Integer homeErrors;
+
     /**
      * 詳細画面で使用する1試合の基本情報を受け取って保持します。
      *
@@ -51,9 +68,16 @@ public class MlbGameDetail {
      * @param homeScore ホームチームの得点。未設定の場合はnull
      * @param status 試合の進行状況
      * @param venue 試合会場名
+     * @param innings APIの順序で並んだイニング別得点。未開始の場合は空リスト
+     * @param awayHits ビジターチームの安打数。未設定の場合はnull
+     * @param awayErrors ビジターチームの失策数。未設定の場合はnull
+     * @param homeHits ホームチームの安打数。未設定の場合はnull
+     * @param homeErrors ホームチームの失策数。未設定の場合はnull
      */
     public MlbGameDetail(long gamePk, String gameDateJst, String awayTeam, Integer awayScore,
-            String homeTeam, Integer homeScore, String status, String venue) {
+            String homeTeam, Integer homeScore, String status, String venue,
+            List<MlbInningScore> innings, Integer awayHits, Integer awayErrors,
+            Integer homeHits, Integer homeErrors) {
         // 引数で受け取った試合の基本情報を各フィールドに設定します。
         this.gamePk = gamePk;
         this.gameDateJst = gameDateJst;
@@ -63,6 +87,13 @@ public class MlbGameDetail {
         this.homeScore = homeScore;
         this.status = status;
         this.venue = venue;
+
+        // イニング別得点を変更できないリストとして保持し、安打数と失策数を設定します。
+        this.innings = List.copyOf(innings);
+        this.awayHits = awayHits;
+        this.awayErrors = awayErrors;
+        this.homeHits = homeHits;
+        this.homeErrors = homeErrors;
     }
 
     /**
@@ -143,5 +174,55 @@ public class MlbGameDetail {
     public String getVenue() {
         // 保持している試合会場名を返します。
         return venue;
+    }
+
+    /**
+     * APIの順序で並んだイニング別得点を返します。
+     *
+     * @return イニング別得点。未開始の場合は空リスト
+     */
+    public List<MlbInningScore> getInnings() {
+        // 保持しているイニング別得点のリストを返します。
+        return innings;
+    }
+
+    /**
+     * ビジターチームの安打数を返します。
+     *
+     * @return ビジターチームの安打数。未設定の場合はnull
+     */
+    public Integer getAwayHits() {
+        // 保持しているビジターチームの安打数を返します。
+        return awayHits;
+    }
+
+    /**
+     * ビジターチームの失策数を返します。
+     *
+     * @return ビジターチームの失策数。未設定の場合はnull
+     */
+    public Integer getAwayErrors() {
+        // 保持しているビジターチームの失策数を返します。
+        return awayErrors;
+    }
+
+    /**
+     * ホームチームの安打数を返します。
+     *
+     * @return ホームチームの安打数。未設定の場合はnull
+     */
+    public Integer getHomeHits() {
+        // 保持しているホームチームの安打数を返します。
+        return homeHits;
+    }
+
+    /**
+     * ホームチームの失策数を返します。
+     *
+     * @return ホームチームの失策数。未設定の場合はnull
+     */
+    public Integer getHomeErrors() {
+        // 保持しているホームチームの失策数を返します。
+        return homeErrors;
     }
 }

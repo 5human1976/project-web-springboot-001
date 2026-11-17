@@ -164,7 +164,7 @@ public class MlbApiService {
 
     /**
      * 指定された試合の基本詳細情報を取得し、開始日時を日本時間にして返します。
-     * 得点が未設定の場合はnullを保持します。
+     * イニング別得点とR・H・Eを含め、未設定の数値はnullを保持します。
      *
      * @param gamePk MLB APIで試合を識別するID
      * @return 詳細画面で使用する試合の基本情報
@@ -206,15 +206,42 @@ public class MlbApiService {
             String venue = gameData.path("venue").path("name").asString("-");
 
             // 得点が整数で存在する場合だけ値を取得し、未設定の場合はnullを保持します。
-            JsonNode scoreTeams = root.path("liveData").path("linescore").path("teams");
+            JsonNode linescore = root.path("liveData").path("linescore");
+            JsonNode scoreTeams = linescore.path("teams");
             JsonNode awayRuns = scoreTeams.path("away").path("runs");
             JsonNode homeRuns = scoreTeams.path("home").path("runs");
             Integer awayScore = awayRuns.isIntegralNumber() ? awayRuns.asInt() : null;
             Integer homeScore = homeRuns.isIntegralNumber() ? homeRuns.asInt() : null;
 
-            // 取得した基本情報を詳細画面用のオブジェクトにまとめて返します。
+            // 両チームの安打数と失策数を取得し、未設定の場合はnullを保持します。
+            JsonNode awayHitsNode = scoreTeams.path("away").path("hits");
+            JsonNode awayErrorsNode = scoreTeams.path("away").path("errors");
+            JsonNode homeHitsNode = scoreTeams.path("home").path("hits");
+            JsonNode homeErrorsNode = scoreTeams.path("home").path("errors");
+            Integer awayHits = awayHitsNode.isIntegralNumber() ? awayHitsNode.asInt() : null;
+            Integer awayErrors = awayErrorsNode.isIntegralNumber() ? awayErrorsNode.asInt() : null;
+            Integer homeHits = homeHitsNode.isIntegralNumber() ? homeHitsNode.asInt() : null;
+            Integer homeErrors = homeErrorsNode.isIntegralNumber() ? homeErrorsNode.asInt() : null;
+
+            // APIのイニング配列を順番に読み取り、延長回も含めて得点をリストに追加します。
+            List<MlbInningScore> innings = new ArrayList<>();
+            JsonNode inningNodes = linescore.path("innings");
+            if (inningNodes.isArray()) {
+                for (JsonNode inningNode : inningNodes) {
+                    // 各回の番号と両チームの得点を取得し、未設定の得点はnullにします。
+                    int inning = inningNode.path("num").asInt();
+                    JsonNode inningAwayRuns = inningNode.path("away").path("runs");
+                    JsonNode inningHomeRuns = inningNode.path("home").path("runs");
+                    Integer awayInningRuns = inningAwayRuns.isIntegralNumber() ? inningAwayRuns.asInt() : null;
+                    Integer homeInningRuns = inningHomeRuns.isIntegralNumber() ? inningHomeRuns.asInt() : null;
+                    innings.add(new MlbInningScore(inning, awayInningRuns, homeInningRuns));
+                }
+            }
+
+            // 基本情報とスコアボードの情報を詳細画面用のオブジェクトにまとめて返します。
             return new MlbGameDetail(responseGamePk, gameDateJst, awayTeam, awayScore,
-                    homeTeam, homeScore, status, venue);
+                    homeTeam, homeScore, status, venue, innings,
+                    awayHits, awayErrors, homeHits, homeErrors);
         } catch (InterruptedException e) {
             // 通信の中断状態を復元し、呼び出し元が扱える例外として通知します。
             Thread.currentThread().interrupt();

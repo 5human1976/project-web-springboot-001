@@ -57,6 +57,15 @@ public class MlbGameDetail {
     /** ホームチームの失策数。未設定の場合はnull。 */
     private final Integer homeErrors;
 
+    /** 勝利投手名。 */
+    private final String winningPitcher;
+
+    /** 敗戦投手名。 */
+    private final String losingPitcher;
+
+    /** セーブ投手名。 */
+    private final String savePitcher;
+
     /**
      * 詳細画面で使用する1試合の基本情報を受け取って保持します。
      *
@@ -73,11 +82,15 @@ public class MlbGameDetail {
      * @param awayErrors ビジターチームの失策数。未設定の場合はnull
      * @param homeHits ホームチームの安打数。未設定の場合はnull
      * @param homeErrors ホームチームの失策数。未設定の場合はnull
+     * @param winningPitcher 勝利投手名
+     * @param losingPitcher 敗戦投手名
+     * @param savePitcher セーブ投手名
      */
     public MlbGameDetail(long gamePk, String gameDateJst, String awayTeam, Integer awayScore,
             String homeTeam, Integer homeScore, String status, String venue,
             List<MlbInningScore> innings, Integer awayHits, Integer awayErrors,
-            Integer homeHits, Integer homeErrors) {
+            Integer homeHits, Integer homeErrors,
+            String winningPitcher, String losingPitcher, String savePitcher) {
         // 引数で受け取った試合の基本情報を各フィールドに設定します。
         this.gamePk = gamePk;
         this.gameDateJst = gameDateJst;
@@ -94,6 +107,9 @@ public class MlbGameDetail {
         this.awayErrors = awayErrors;
         this.homeHits = homeHits;
         this.homeErrors = homeErrors;
+        this.winningPitcher = winningPitcher;
+        this.losingPitcher = losingPitcher;
+        this.savePitcher = savePitcher;
     }
 
     /**
@@ -224,5 +240,17 @@ public class MlbGameDetail {
     public Integer getHomeErrors() {
         // 保持しているホームチームの失策数を返します。
         return homeErrors;
+    }
+
+    public String getWinningPitcher() {
+        return winningPitcher;
+    }
+
+    public String getLosingPitcher() {
+        return losingPitcher;
+    }
+
+    public String getSavePitcher() {
+        return savePitcher;
     }
 }

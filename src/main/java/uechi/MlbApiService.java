@@ -238,10 +238,17 @@ public class MlbApiService {
                 }
             }
 
+            // 投手結果を取得します。未確定やセーブなしの場合は「-」にします。
+            JsonNode decisions = root.path("liveData").path("decisions");
+            String winningPitcher = decisions.path("winner").path("fullName").asString("-");
+            String losingPitcher = decisions.path("loser").path("fullName").asString("-");
+            String savePitcher = decisions.path("save").path("fullName").asString("-");
+
             // 基本情報とスコアボードの情報を詳細画面用のオブジェクトにまとめて返します。
             return new MlbGameDetail(responseGamePk, gameDateJst, awayTeam, awayScore,
                     homeTeam, homeScore, status, venue, innings,
-                    awayHits, awayErrors, homeHits, homeErrors);
+                    awayHits, awayErrors, homeHits, homeErrors,
+                    winningPitcher, losingPitcher, savePitcher);
         } catch (InterruptedException e) {
             // 通信の中断状態を復元し、呼び出し元が扱える例外として通知します。
             Thread.currentThread().interrupt();

@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  * 対象日の試合一覧や指定された試合の詳細情報を取得し、Thymeleafの画面に渡します。
  *
  * 【作成日】2026-10-21
- * 【最終更新日】2026-11-17
+ * 【最終更新日】2026-11-18
  *
  * @author masa
  * @version 1.0
@@ -73,14 +73,22 @@ public class MlbController {
     }
 
     /**
-     * URLで指定された試合の詳細情報を画面に渡し、試合詳細のビュー名を返します。
+     * 指定された試合の詳細情報と一覧へ戻るための対象日を画面に渡します。
      *
      * @param gamePk URLのパスに含まれるMLBの試合識別ID
+     * @param targetDate 一覧へ戻る際の検索対象日。未指定の場合はnull
      * @param model 画面に渡すデータを保持するモデル
      * @return 試合詳細のテンプレートを指定するビュー名
      */
     @GetMapping("/mlb/game/{gamePk}")
-    public String detail(@PathVariable("gamePk") long gamePk, Model model) {
+    public String detail(
+            @PathVariable("gamePk") long gamePk,
+            @RequestParam(name = "targetDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate,
+            Model model) {
+        // 一覧へ戻る際の対象日を、詳細取得の成否にかかわらず画面へ渡します。
+        model.addAttribute("targetDate", targetDate);
+
         try {
             // URLの試合IDをServiceへ渡し、取得した詳細情報をモデルに設定します。
             MlbGameDetail gameDetail = mlbApiService.getGameDetail(gamePk);

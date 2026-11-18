@@ -78,7 +78,7 @@
                     <td th:text="${game.seriesDescription}"></td>
                     <td th:text="${game.seriesGameNumber != null ? game.seriesGameNumber : '-'}"></td>
                     <td>
-                        <a th:href="@{/mlb/game/{gamePk}(gamePk=${game.gamePk})}">詳細</a>
+                        <a th:href="@{/mlb/game/{gamePk}(gamePk=${game.gamePk}, targetDate=${targetDate})}">詳細</a>
                     </td>
                 </tr>
             </tbody>

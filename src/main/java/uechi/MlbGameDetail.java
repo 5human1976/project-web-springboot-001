@@ -8,10 +8,10 @@ import java.util.List;
  *
  * 【概要】
  * MLBの1試合の基本詳細情報を保持するクラスです。
- * Serviceが取得した基本情報とイニング別得点、R・H・Eを詳細画面へ渡すために使用します。
+ * Serviceが取得した基本情報、イニング別得点、R・H・E、投手結果を詳細画面へ渡します。
  *
  * 【作成日】2026-11-17
- * 【最終更新日】2026-11-17
+ * 【最終更新日】2026-11-18
  *
  * @author masa
  * @version 1.0
@@ -57,6 +57,15 @@ public class MlbGameDetail {
     /** ホームチームの失策数。未設定の場合はnull。 */
     private final Integer homeErrors;
 
+    /** 勝利投手名。未設定の場合はハイフン。 */
+    private final String winningPitcher;
+
+    /** 敗戦投手名。未設定の場合はハイフン。 */
+    private final String losingPitcher;
+
+    /** セーブ投手名。未設定の場合はハイフン。 */
+    private final String savePitcher;
+
     /**
      * 詳細画面で使用する1試合の基本情報を受け取って保持します。
      *
@@ -73,11 +82,15 @@ public class MlbGameDetail {
      * @param awayErrors ビジターチームの失策数。未設定の場合はnull
      * @param homeHits ホームチームの安打数。未設定の場合はnull
      * @param homeErrors ホームチームの失策数。未設定の場合はnull
+     * @param winningPitcher 勝利投手名。未設定の場合はハイフン
+     * @param losingPitcher 敗戦投手名。未設定の場合はハイフン
+     * @param savePitcher セーブ投手名。未設定の場合はハイフン
      */
     public MlbGameDetail(long gamePk, String gameDateJst, String awayTeam, Integer awayScore,
             String homeTeam, Integer homeScore, String status, String venue,
             List<MlbInningScore> innings, Integer awayHits, Integer awayErrors,
-            Integer homeHits, Integer homeErrors) {
+            Integer homeHits, Integer homeErrors,
+            String winningPitcher, String losingPitcher, String savePitcher) {
         // 引数で受け取った試合の基本情報を各フィールドに設定します。
         this.gamePk = gamePk;
         this.gameDateJst = gameDateJst;
@@ -94,6 +107,11 @@ public class MlbGameDetail {
         this.awayErrors = awayErrors;
         this.homeHits = homeHits;
         this.homeErrors = homeErrors;
+
+        // 引数で受け取った勝利投手、敗戦投手、セーブ投手の名前を設定します。
+        this.winningPitcher = winningPitcher;
+        this.losingPitcher = losingPitcher;
+        this.savePitcher = savePitcher;
     }
 
     /**
@@ -224,5 +242,35 @@ public class MlbGameDetail {
     public Integer getHomeErrors() {
         // 保持しているホームチームの失策数を返します。
         return homeErrors;
+    }
+
+    /**
+     * 勝利投手名を返します。
+     *
+     * @return 勝利投手名。未設定の場合はハイフン
+     */
+    public String getWinningPitcher() {
+        // 保持している勝利投手名を返します。
+        return winningPitcher;
+    }
+
+    /**
+     * 敗戦投手名を返します。
+     *
+     * @return 敗戦投手名。未設定の場合はハイフン
+     */
+    public String getLosingPitcher() {
+        // 保持している敗戦投手名を返します。
+        return losingPitcher;
+    }
+
+    /**
+     * セーブ投手名を返します。
+     *
+     * @return セーブ投手名。未設定の場合はハイフン
+     */
+    public String getSavePitcher() {
+        // 保持しているセーブ投手名を返します。
+        return savePitcher;
     }
 }

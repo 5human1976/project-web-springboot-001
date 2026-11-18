@@ -33,7 +33,7 @@ import tools.jackson.databind.json.JsonMapper;
  * API通信とJSON解析、日時変換、重複排除を担当します。
  *
  * 【作成日】2026-10-27
- * 【最終更新日】2026-11-17
+ * 【最終更新日】2026-11-18
  *
  * @author masa
  * @version 1.0
@@ -238,10 +238,17 @@ public class MlbApiService {
                 }
             }
 
-            // 基本情報とスコアボードの情報を詳細画面用のオブジェクトにまとめて返します。
+            // 同じレスポンスから投手結果の名前を取得し、未設定の場合はハイフンにします。
+            JsonNode decisions = root.path("liveData").path("decisions");
+            String winningPitcher = decisions.path("winner").path("fullName").asString("-");
+            String losingPitcher = decisions.path("loser").path("fullName").asString("-");
+            String savePitcher = decisions.path("save").path("fullName").asString("-");
+
+            // 基本情報、スコアボード、投手結果を詳細画面用のオブジェクトにまとめて返します。
             return new MlbGameDetail(responseGamePk, gameDateJst, awayTeam, awayScore,
                     homeTeam, homeScore, status, venue, innings,
-                    awayHits, awayErrors, homeHits, homeErrors);
+                    awayHits, awayErrors, homeHits, homeErrors,
+                    winningPitcher, losingPitcher, savePitcher);
         } catch (InterruptedException e) {
             // 通信の中断状態を復元し、呼び出し元が扱える例外として通知します。
             Thread.currentThread().interrupt();

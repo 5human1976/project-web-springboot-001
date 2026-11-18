@@ -121,10 +121,15 @@
                     </tr>
                 </tbody>
             </table>
+            <h2>投手結果</h2>
+            <p>勝利投手：<span th:text="${gameDetail.winningPitcher}"></span></p>
+            <p>敗戦投手：<span th:text="${gameDetail.losingPitcher}"></span></p>
+            <p>セーブ：<span th:text="${gameDetail.savePitcher}"></span></p>
         </section>
         <p th:if="${errorMessage != null}">gamePk：<span th:text="${gamePk}"></span></p>
         <p th:if="${errorMessage != null}" th:text="${errorMessage}"></p>
-        <a th:href="@{/mlb}">← 試合一覧へ戻る</a>
+        <a th:if="${targetDate != null}" th:href="@{/mlb(targetDate=${targetDate})}">← 試合一覧へ戻る</a>
+        <a th:if="${targetDate == null}" th:href="@{/mlb}">← 試合一覧へ戻る</a>
     </main>
 </body>
 

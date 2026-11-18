@@ -238,13 +238,13 @@ public class MlbApiService {
                 }
             }
 
-            // 同じレスポンスから投手結果の名前を取得し、未設定の場合はハイフンにします。
+            // 投手結果を取得します。未確定やセーブなしの場合は「-」にします。
             JsonNode decisions = root.path("liveData").path("decisions");
             String winningPitcher = decisions.path("winner").path("fullName").asString("-");
             String losingPitcher = decisions.path("loser").path("fullName").asString("-");
             String savePitcher = decisions.path("save").path("fullName").asString("-");
 
-            // 基本情報、スコアボード、投手結果を詳細画面用のオブジェクトにまとめて返します。
+            // 基本情報とスコアボードの情報を詳細画面用のオブジェクトにまとめて返します。
             return new MlbGameDetail(responseGamePk, gameDateJst, awayTeam, awayScore,
                     homeTeam, homeScore, status, venue, innings,
                     awayHits, awayErrors, homeHits, homeErrors,

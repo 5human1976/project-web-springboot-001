@@ -125,6 +125,63 @@
             <p>勝利投手：<span th:text="${gameDetail.winningPitcher}"></span></p>
             <p>敗戦投手：<span th:text="${gameDetail.losingPitcher}"></span></p>
             <p>セーブ：<span th:text="${gameDetail.savePitcher}"></span></p>
+            <h2>出場選手</h2>
+            <section>
+                <h3 th:text="${gameDetail.awayTeam}"></h3>
+                <h4>野手</h4>
+                <ul th:if="${!#lists.isEmpty(gameDetail.awayPlayers.startingBatters)}">
+                    <li th:each="batter : ${gameDetail.awayPlayers.startingBatters}">
+                        <span th:text="${batter.battingSlot + '番'}"></span>
+                        <span th:text="${batter.playerName}"></span>
+                    </li>
+                </ul>
+                <p th:if="${#lists.isEmpty(gameDetail.awayPlayers.startingBatters)}">-</p>
+                <div th:if="${!#lists.isEmpty(gameDetail.awayPlayers.substituteBatters)}">
+                    <h5>途中出場</h5>
+                    <ul>
+                        <li th:each="batter : ${gameDetail.awayPlayers.substituteBatters}"
+                            th:text="${batter.playerName + '（' + batter.battingSlot + '番枠）'}"></li>
+                    </ul>
+                </div>
+                <h4>投手</h4>
+                <h5>先発</h5>
+                <p th:text="${gameDetail.awayPlayers.startingPitcher}"></p>
+                <h5>中継ぎ</h5>
+                <ul th:if="${!#lists.isEmpty(gameDetail.awayPlayers.reliefPitchers)}">
+                    <li th:each="player : ${gameDetail.awayPlayers.reliefPitchers}" th:text="${player}"></li>
+                </ul>
+                <p th:if="${#lists.isEmpty(gameDetail.awayPlayers.reliefPitchers)}">-</p>
+                <h5>抑え（最終登板）</h5>
+                <p th:text="${gameDetail.awayPlayers.finalPitcher}"></p>
+            </section>
+            <section>
+                <h3 th:text="${gameDetail.homeTeam}"></h3>
+                <h4>野手</h4>
+                <ul th:if="${!#lists.isEmpty(gameDetail.homePlayers.startingBatters)}">
+                    <li th:each="batter : ${gameDetail.homePlayers.startingBatters}">
+                        <span th:text="${batter.battingSlot + '番'}"></span>
+                        <span th:text="${batter.playerName}"></span>
+                    </li>
+                </ul>
+                <p th:if="${#lists.isEmpty(gameDetail.homePlayers.startingBatters)}">-</p>
+                <div th:if="${!#lists.isEmpty(gameDetail.homePlayers.substituteBatters)}">
+                    <h5>途中出場</h5>
+                    <ul>
+                        <li th:each="batter : ${gameDetail.homePlayers.substituteBatters}"
+                            th:text="${batter.playerName + '（' + batter.battingSlot + '番枠）'}"></li>
+                    </ul>
+                </div>
+                <h4>投手</h4>
+                <h5>先発</h5>
+                <p th:text="${gameDetail.homePlayers.startingPitcher}"></p>
+                <h5>中継ぎ</h5>
+                <ul th:if="${!#lists.isEmpty(gameDetail.homePlayers.reliefPitchers)}">
+                    <li th:each="player : ${gameDetail.homePlayers.reliefPitchers}" th:text="${player}"></li>
+                </ul>
+                <p th:if="${#lists.isEmpty(gameDetail.homePlayers.reliefPitchers)}">-</p>
+                <h5>抑え（最終登板）</h5>
+                <p th:text="${gameDetail.homePlayers.finalPitcher}"></p>
+            </section>
         </section>
         <p th:if="${errorMessage != null}">gamePk：<span th:text="${gamePk}"></span></p>
         <p th:if="${errorMessage != null}" th:text="${errorMessage}"></p>

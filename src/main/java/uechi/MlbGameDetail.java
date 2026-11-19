@@ -8,10 +8,10 @@ import java.util.List;
  *
  * 【概要】
  * MLBの1試合の基本詳細情報を保持するクラスです。
- * Serviceが取得した基本情報とイニング別得点、R・H・Eを詳細画面へ渡すために使用します。
+ * Serviceが取得した基本情報、スコアボード、投手結果、出場選手名を詳細画面へ渡します。
  *
  * 【作成日】2026-11-17
- * 【最終更新日】2026-11-17
+ * 【最終更新日】2026-11-19
  *
  * @author masa
  * @version 1.0
@@ -66,6 +66,12 @@ public class MlbGameDetail {
     /** セーブ投手名。 */
     private final String savePitcher;
 
+    /** ビジターチームの出場選手名。 */
+    private final MlbTeamPlayers awayPlayers;
+
+    /** ホームチームの出場選手名。 */
+    private final MlbTeamPlayers homePlayers;
+
     /**
      * 詳細画面で使用する1試合の基本情報を受け取って保持します。
      *
@@ -85,12 +91,15 @@ public class MlbGameDetail {
      * @param winningPitcher 勝利投手名
      * @param losingPitcher 敗戦投手名
      * @param savePitcher セーブ投手名
+     * @param awayPlayers ビジターチームの出場選手名
+     * @param homePlayers ホームチームの出場選手名
      */
     public MlbGameDetail(long gamePk, String gameDateJst, String awayTeam, Integer awayScore,
             String homeTeam, Integer homeScore, String status, String venue,
             List<MlbInningScore> innings, Integer awayHits, Integer awayErrors,
             Integer homeHits, Integer homeErrors,
-            String winningPitcher, String losingPitcher, String savePitcher) {
+            String winningPitcher, String losingPitcher, String savePitcher,
+            MlbTeamPlayers awayPlayers, MlbTeamPlayers homePlayers) {
         // 引数で受け取った試合の基本情報を各フィールドに設定します。
         this.gamePk = gamePk;
         this.gameDateJst = gameDateJst;
@@ -110,6 +119,10 @@ public class MlbGameDetail {
         this.winningPitcher = winningPitcher;
         this.losingPitcher = losingPitcher;
         this.savePitcher = savePitcher;
+
+        // 両チームの出場選手情報をそれぞれ設定します。
+        this.awayPlayers = awayPlayers;
+        this.homePlayers = homePlayers;
     }
 
     /**
@@ -252,5 +265,25 @@ public class MlbGameDetail {
 
     public String getSavePitcher() {
         return savePitcher;
+    }
+
+    /**
+     * ビジターチームの出場選手情報を返します。
+     *
+     * @return ビジターチームの野手と投手の名前
+     */
+    public MlbTeamPlayers getAwayPlayers() {
+        // 保持しているビジターチームの出場選手情報を返します。
+        return awayPlayers;
+    }
+
+    /**
+     * ホームチームの出場選手情報を返します。
+     *
+     * @return ホームチームの野手と投手の名前
+     */
+    public MlbTeamPlayers getHomePlayers() {
+        // 保持しているホームチームの出場選手情報を返します。
+        return homePlayers;
     }
 }

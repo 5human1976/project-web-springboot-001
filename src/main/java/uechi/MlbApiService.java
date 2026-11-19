@@ -14,6 +14,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,7 +34,7 @@ import tools.jackson.databind.json.JsonMapper;
  * API通信とJSON解析、日時変換、重複排除を担当します。
  *
  * 【作成日】2026-10-27
- * 【最終更新日】2026-11-18
+ * 【最終更新日】2026-11-19
  *
  * @author masa
  * @version 1.0
@@ -244,11 +245,16 @@ public class MlbApiService {
             String losingPitcher = decisions.path("loser").path("fullName").asString("-");
             String savePitcher = decisions.path("save").path("fullName").asString("-");
 
-            // 基本情報とスコアボードの情報を詳細画面用のオブジェクトにまとめて返します。
+            // 同じレスポンスのboxscoreから両チームの出場選手名を取得します。
+            JsonNode boxscoreTeams = root.path("liveData").path("boxscore").path("teams");
+            MlbTeamPlayers awayPlayers = getTeamPlayers(boxscoreTeams.path("away"));
+            MlbTeamPlayers homePlayers = getTeamPlayers(boxscoreTeams.path("home"));
+
+            // 基本情報、スコアボード、投手結果、出場選手を詳細画面用にまとめて返します。
             return new MlbGameDetail(responseGamePk, gameDateJst, awayTeam, awayScore,
                     homeTeam, homeScore, status, venue, innings,
                     awayHits, awayErrors, homeHits, homeErrors,
-                    winningPitcher, losingPitcher, savePitcher);
+                    winningPitcher, losingPitcher, savePitcher, awayPlayers, homePlayers);
         } catch (InterruptedException e) {
             // 通信の中断状態を復元し、呼び出し元が扱える例外として通知します。
             Thread.currentThread().interrupt();
@@ -257,5 +263,96 @@ public class MlbApiService {
             // 通信、JSON解析、日時変換の失敗をControllerに通知します。
             throw new IllegalStateException("MLB試合詳細情報の取得に失敗しました。", e);
         }
+    }
+
+    /**
+     * 1チーム分のboxscoreから選手名を取得し、投手を元の登板順で分類します。
+     * 名前が欠けた投手がいても、他の投手を先発や最終登板へ繰り上げません。
+     */
+    private MlbTeamPlayers getTeamPlayers(JsonNode team) {
+        // 先発野手、途中出場野手、投手名を保持するリストと重複確認用の集合を用意します。
+        JsonNode players = team.path("players");
+        List<MlbBatter> startingBatters = new ArrayList<>();
+        List<MlbBatter> substituteBatters = new ArrayList<>();
+        Set<Long> batterIds = new HashSet<>();
+        List<String> reliefPitchers = new ArrayList<>();
+        Set<Long> pitcherIds = new HashSet<>();
+        String startingPitcher = "-";
+        String finalPitcher = "-";
+
+        // battersの選手名とbattingOrderを取得し、打順情報がない選手や不正な値を除外します。
+        JsonNode batters = team.path("batters");
+        if (batters.isArray()) {
+            for (JsonNode id : batters) {
+                String name = getPlayerName(players, id);
+                if (name == null) {
+                    continue;
+                }
+                String battingOrder = players.path("ID" + id.asLong()).path("battingOrder").asString("");
+                int order;
+                try {
+                    // 打順情報を整数に変換し、変換できない場合はその選手だけをスキップします。
+                    order = Integer.parseInt(battingOrder);
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+
+                // 打順枠と交代順を分離し、1〜9以外の枠や同じ選手IDの重複を除外します。
+                int battingSlot = order / 100;
+                int substitutionOrder = order % 100;
+                if (battingSlot < 1 || battingSlot > 9 || !batterIds.add(id.asLong())) {
+                    continue;
+                }
+
+                // 交代順が0なら先発、それ以外は途中出場として別のリストに追加します。
+                MlbBatter batter = new MlbBatter(battingSlot, name, substitutionOrder > 0, substitutionOrder);
+                if (batter.isSubstitute()) {
+                    substituteBatters.add(batter);
+                } else {
+                    startingBatters.add(batter);
+                }
+            }
+        }
+
+        // pitchersの元の位置で先発・中継ぎ・最終登板を分け、1人の場合は先発だけにします。
+        JsonNode pitchers = team.path("pitchers");
+        if (pitchers.isArray()) {
+            for (int index = 0; index < pitchers.size(); index++) {
+                JsonNode id = pitchers.path(index);
+                String name = getPlayerName(players, id);
+                if (name == null || !pitcherIds.add(id.asLong())) {
+                    continue;
+                }
+                if (index == 0) {
+                    startingPitcher = name;
+                } else if (index == pitchers.size() - 1) {
+                    finalPitcher = name;
+                } else {
+                    reliefPitchers.add(name);
+                }
+            }
+        }
+
+        // 先発を打順枠順、途中出場を打順枠と交代順で並べ、投手は登板順のまま保持します。
+        startingBatters.sort(Comparator.comparingInt(MlbBatter::getBattingSlot));
+        substituteBatters.sort(Comparator.comparingInt(MlbBatter::getBattingSlot)
+                .thenComparingInt(MlbBatter::getSubstitutionOrder));
+
+        // 情報がない場合も空リストとハイフンを持つチーム情報を返します。
+        return new MlbTeamPlayers(startingBatters, substituteBatters, startingPitcher, reliefPitchers, finalPitcher);
+    }
+
+    /**
+     * 選手IDに対応する名前を返し、IDや名前が取得できない場合はnullを返します。
+     */
+    private String getPlayerName(JsonNode players, JsonNode id) {
+        // 正の整数として取得できない選手IDはスキップ対象にします。
+        if (!id.isIntegralNumber() || id.asLong() <= 0) {
+            return null;
+        }
+
+        // playersのID付きキーから氏名を取得し、空白のみの名前もスキップ対象にします。
+        String name = players.path("ID" + id.asLong()).path("person").path("fullName").asString("");
+        return name.isBlank() ? null : name;
     }
 }

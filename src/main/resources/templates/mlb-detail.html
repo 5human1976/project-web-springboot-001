@@ -129,58 +129,276 @@
             <section>
                 <h3 th:text="${gameDetail.awayTeam}"></h3>
                 <h4>野手</h4>
-                <ul th:if="${!#lists.isEmpty(gameDetail.awayPlayers.startingBatters)}">
-                    <li th:each="batter : ${gameDetail.awayPlayers.startingBatters}">
-                        <span th:text="${batter.battingSlot + '番'}"></span>
-                        <span th:text="${batter.playerName}"></span>
-                    </li>
-                </ul>
+                <p>AB=打数 / H=安打 / HR=本塁打 / BB=四球 / SB=盗塁</p>
+                <table class="batting-stats" th:if="${!#lists.isEmpty(gameDetail.awayPlayers.startingBatters)}">
+                    <thead>
+                        <tr>
+                            <th scope="col">打順</th>
+                            <th scope="col" class="team-name">選手</th>
+                            <th scope="col">AB</th>
+                            <th scope="col">H</th>
+                            <th scope="col">HR</th>
+                            <th scope="col">BB</th>
+                            <th scope="col">SB</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="batter : ${gameDetail.awayPlayers.startingBatters}">
+                            <td th:text="${batter.battingSlot + '番'}"></td>
+                            <th scope="row" class="team-name" th:text="${batter.playerName}"></th>
+                            <td th:text="${batter.atBats != null ? batter.atBats : '-'}"></td>
+                            <td th:text="${batter.hits != null ? batter.hits : '-'}"></td>
+                            <td th:text="${batter.homeRuns != null ? batter.homeRuns : '-'}"></td>
+                            <td th:text="${batter.baseOnBalls != null ? batter.baseOnBalls : '-'}"></td>
+                            <td th:text="${batter.stolenBases != null ? batter.stolenBases : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
                 <p th:if="${#lists.isEmpty(gameDetail.awayPlayers.startingBatters)}">-</p>
                 <div th:if="${!#lists.isEmpty(gameDetail.awayPlayers.substituteBatters)}">
                     <h5>途中出場</h5>
-                    <ul>
-                        <li th:each="batter : ${gameDetail.awayPlayers.substituteBatters}"
-                            th:text="${batter.playerName + '（' + batter.battingSlot + '番枠）'}"></li>
-                    </ul>
+                    <table class="batting-stats">
+                        <thead>
+                            <tr>
+                                <th scope="col">打順枠</th>
+                                <th scope="col" class="team-name">選手</th>
+                                <th scope="col">AB</th>
+                                <th scope="col">H</th>
+                                <th scope="col">HR</th>
+                                <th scope="col">BB</th>
+                                <th scope="col">SB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="batter : ${gameDetail.awayPlayers.substituteBatters}">
+                                <td th:text="${batter.battingSlot + '番枠'}"></td>
+                                <th scope="row" class="team-name" th:text="${batter.playerName}"></th>
+                                <td th:text="${batter.atBats != null ? batter.atBats : '-'}"></td>
+                                <td th:text="${batter.hits != null ? batter.hits : '-'}"></td>
+                                <td th:text="${batter.homeRuns != null ? batter.homeRuns : '-'}"></td>
+                                <td th:text="${batter.baseOnBalls != null ? batter.baseOnBalls : '-'}"></td>
+                                <td th:text="${batter.stolenBases != null ? batter.stolenBases : '-'}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
                 <h4>投手</h4>
+                <p>IP=投球回 / H=被安打 / R=失点 / ER=自責点 / BB=四球 / K=奪三振</p>
                 <h5>先発</h5>
-                <p th:text="${gameDetail.awayPlayers.startingPitcher}"></p>
+                <table class="pitching-stats" th:if="${gameDetail.awayPlayers.startingPitcher != null}" th:with="pitcher=${gameDetail.awayPlayers.startingPitcher}">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="team-name">選手</th>
+                            <th scope="col">IP</th>
+                            <th scope="col">H</th>
+                            <th scope="col">R</th>
+                            <th scope="col">ER</th>
+                            <th scope="col">BB</th>
+                            <th scope="col">K</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <td th:text="${pitcher.inningsPitched}"></td>
+                            <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
+                            <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
+                            <td th:text="${pitcher.earnedRuns != null ? pitcher.earnedRuns : '-'}"></td>
+                            <td th:text="${pitcher.baseOnBalls != null ? pitcher.baseOnBalls : '-'}"></td>
+                            <td th:text="${pitcher.strikeOuts != null ? pitcher.strikeOuts : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p th:if="${gameDetail.awayPlayers.startingPitcher == null}">-</p>
                 <h5>中継ぎ</h5>
-                <ul th:if="${!#lists.isEmpty(gameDetail.awayPlayers.reliefPitchers)}">
-                    <li th:each="player : ${gameDetail.awayPlayers.reliefPitchers}" th:text="${player}"></li>
-                </ul>
+                <table class="pitching-stats" th:if="${!#lists.isEmpty(gameDetail.awayPlayers.reliefPitchers)}">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="team-name">選手</th>
+                            <th scope="col">IP</th>
+                            <th scope="col">H</th>
+                            <th scope="col">R</th>
+                            <th scope="col">ER</th>
+                            <th scope="col">BB</th>
+                            <th scope="col">K</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="pitcher : ${gameDetail.awayPlayers.reliefPitchers}">
+                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <td th:text="${pitcher.inningsPitched}"></td>
+                            <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
+                            <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
+                            <td th:text="${pitcher.earnedRuns != null ? pitcher.earnedRuns : '-'}"></td>
+                            <td th:text="${pitcher.baseOnBalls != null ? pitcher.baseOnBalls : '-'}"></td>
+                            <td th:text="${pitcher.strikeOuts != null ? pitcher.strikeOuts : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
                 <p th:if="${#lists.isEmpty(gameDetail.awayPlayers.reliefPitchers)}">-</p>
                 <h5>抑え（最終登板）</h5>
-                <p th:text="${gameDetail.awayPlayers.finalPitcher}"></p>
+                <table class="pitching-stats" th:if="${gameDetail.awayPlayers.finalPitcher != null}" th:with="pitcher=${gameDetail.awayPlayers.finalPitcher}">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="team-name">選手</th>
+                            <th scope="col">IP</th>
+                            <th scope="col">H</th>
+                            <th scope="col">R</th>
+                            <th scope="col">ER</th>
+                            <th scope="col">BB</th>
+                            <th scope="col">K</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <td th:text="${pitcher.inningsPitched}"></td>
+                            <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
+                            <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
+                            <td th:text="${pitcher.earnedRuns != null ? pitcher.earnedRuns : '-'}"></td>
+                            <td th:text="${pitcher.baseOnBalls != null ? pitcher.baseOnBalls : '-'}"></td>
+                            <td th:text="${pitcher.strikeOuts != null ? pitcher.strikeOuts : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p th:if="${gameDetail.awayPlayers.finalPitcher == null}">-</p>
             </section>
             <section>
                 <h3 th:text="${gameDetail.homeTeam}"></h3>
                 <h4>野手</h4>
-                <ul th:if="${!#lists.isEmpty(gameDetail.homePlayers.startingBatters)}">
-                    <li th:each="batter : ${gameDetail.homePlayers.startingBatters}">
-                        <span th:text="${batter.battingSlot + '番'}"></span>
-                        <span th:text="${batter.playerName}"></span>
-                    </li>
-                </ul>
+                <p>AB=打数 / H=安打 / HR=本塁打 / BB=四球 / SB=盗塁</p>
+                <table class="batting-stats" th:if="${!#lists.isEmpty(gameDetail.homePlayers.startingBatters)}">
+                    <thead>
+                        <tr>
+                            <th scope="col">打順</th>
+                            <th scope="col" class="team-name">選手</th>
+                            <th scope="col">AB</th>
+                            <th scope="col">H</th>
+                            <th scope="col">HR</th>
+                            <th scope="col">BB</th>
+                            <th scope="col">SB</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="batter : ${gameDetail.homePlayers.startingBatters}">
+                            <td th:text="${batter.battingSlot + '番'}"></td>
+                            <th scope="row" class="team-name" th:text="${batter.playerName}"></th>
+                            <td th:text="${batter.atBats != null ? batter.atBats : '-'}"></td>
+                            <td th:text="${batter.hits != null ? batter.hits : '-'}"></td>
+                            <td th:text="${batter.homeRuns != null ? batter.homeRuns : '-'}"></td>
+                            <td th:text="${batter.baseOnBalls != null ? batter.baseOnBalls : '-'}"></td>
+                            <td th:text="${batter.stolenBases != null ? batter.stolenBases : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
                 <p th:if="${#lists.isEmpty(gameDetail.homePlayers.startingBatters)}">-</p>
                 <div th:if="${!#lists.isEmpty(gameDetail.homePlayers.substituteBatters)}">
                     <h5>途中出場</h5>
-                    <ul>
-                        <li th:each="batter : ${gameDetail.homePlayers.substituteBatters}"
-                            th:text="${batter.playerName + '（' + batter.battingSlot + '番枠）'}"></li>
-                    </ul>
+                    <table class="batting-stats">
+                        <thead>
+                            <tr>
+                                <th scope="col">打順枠</th>
+                                <th scope="col" class="team-name">選手</th>
+                                <th scope="col">AB</th>
+                                <th scope="col">H</th>
+                                <th scope="col">HR</th>
+                                <th scope="col">BB</th>
+                                <th scope="col">SB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="batter : ${gameDetail.homePlayers.substituteBatters}">
+                                <td th:text="${batter.battingSlot + '番枠'}"></td>
+                                <th scope="row" class="team-name" th:text="${batter.playerName}"></th>
+                                <td th:text="${batter.atBats != null ? batter.atBats : '-'}"></td>
+                                <td th:text="${batter.hits != null ? batter.hits : '-'}"></td>
+                                <td th:text="${batter.homeRuns != null ? batter.homeRuns : '-'}"></td>
+                                <td th:text="${batter.baseOnBalls != null ? batter.baseOnBalls : '-'}"></td>
+                                <td th:text="${batter.stolenBases != null ? batter.stolenBases : '-'}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
                 <h4>投手</h4>
+                <p>IP=投球回 / H=被安打 / R=失点 / ER=自責点 / BB=四球 / K=奪三振</p>
                 <h5>先発</h5>
-                <p th:text="${gameDetail.homePlayers.startingPitcher}"></p>
+                <table class="pitching-stats" th:if="${gameDetail.homePlayers.startingPitcher != null}" th:with="pitcher=${gameDetail.homePlayers.startingPitcher}">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="team-name">選手</th>
+                            <th scope="col">IP</th>
+                            <th scope="col">H</th>
+                            <th scope="col">R</th>
+                            <th scope="col">ER</th>
+                            <th scope="col">BB</th>
+                            <th scope="col">K</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <td th:text="${pitcher.inningsPitched}"></td>
+                            <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
+                            <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
+                            <td th:text="${pitcher.earnedRuns != null ? pitcher.earnedRuns : '-'}"></td>
+                            <td th:text="${pitcher.baseOnBalls != null ? pitcher.baseOnBalls : '-'}"></td>
+                            <td th:text="${pitcher.strikeOuts != null ? pitcher.strikeOuts : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p th:if="${gameDetail.homePlayers.startingPitcher == null}">-</p>
                 <h5>中継ぎ</h5>
-                <ul th:if="${!#lists.isEmpty(gameDetail.homePlayers.reliefPitchers)}">
-                    <li th:each="player : ${gameDetail.homePlayers.reliefPitchers}" th:text="${player}"></li>
-                </ul>
+                <table class="pitching-stats" th:if="${!#lists.isEmpty(gameDetail.homePlayers.reliefPitchers)}">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="team-name">選手</th>
+                            <th scope="col">IP</th>
+                            <th scope="col">H</th>
+                            <th scope="col">R</th>
+                            <th scope="col">ER</th>
+                            <th scope="col">BB</th>
+                            <th scope="col">K</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="pitcher : ${gameDetail.homePlayers.reliefPitchers}">
+                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <td th:text="${pitcher.inningsPitched}"></td>
+                            <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
+                            <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
+                            <td th:text="${pitcher.earnedRuns != null ? pitcher.earnedRuns : '-'}"></td>
+                            <td th:text="${pitcher.baseOnBalls != null ? pitcher.baseOnBalls : '-'}"></td>
+                            <td th:text="${pitcher.strikeOuts != null ? pitcher.strikeOuts : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
                 <p th:if="${#lists.isEmpty(gameDetail.homePlayers.reliefPitchers)}">-</p>
                 <h5>抑え（最終登板）</h5>
-                <p th:text="${gameDetail.homePlayers.finalPitcher}"></p>
+                <table class="pitching-stats" th:if="${gameDetail.homePlayers.finalPitcher != null}" th:with="pitcher=${gameDetail.homePlayers.finalPitcher}">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="team-name">選手</th>
+                            <th scope="col">IP</th>
+                            <th scope="col">H</th>
+                            <th scope="col">R</th>
+                            <th scope="col">ER</th>
+                            <th scope="col">BB</th>
+                            <th scope="col">K</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <td th:text="${pitcher.inningsPitched}"></td>
+                            <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
+                            <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
+                            <td th:text="${pitcher.earnedRuns != null ? pitcher.earnedRuns : '-'}"></td>
+                            <td th:text="${pitcher.baseOnBalls != null ? pitcher.baseOnBalls : '-'}"></td>
+                            <td th:text="${pitcher.strikeOuts != null ? pitcher.strikeOuts : '-'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p th:if="${gameDetail.homePlayers.finalPitcher == null}">-</p>
             </section>
         </section>
         <p th:if="${errorMessage != null}">gamePk：<span th:text="${gamePk}"></span></p>

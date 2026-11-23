@@ -34,7 +34,7 @@ import tools.jackson.databind.json.JsonMapper;
  * API通信とJSON解析、日時変換、重複排除を担当します。
  *
  * 【作成日】2026-10-27
- * 【最終更新日】2026-11-19
+ * 【最終更新日】2026-11-23
  *
  * @author masa
  * @version 1.0
@@ -266,19 +266,19 @@ public class MlbApiService {
     }
 
     /**
-     * 1チーム分のboxscoreから選手名を取得し、投手を元の登板順で分類します。
+     * 1チーム分のboxscoreから野手情報と投球成績を取得し、投手を元の登板順で分類します。
      * 名前が欠けた投手がいても、他の投手を先発や最終登板へ繰り上げません。
      */
     private MlbTeamPlayers getTeamPlayers(JsonNode team) {
-        // 先発野手、途中出場野手、投手名を保持するリストと重複確認用の集合を用意します。
+        // 先発野手、途中出場野手、投手情報を保持するリストと重複確認用の集合を用意します。
         JsonNode players = team.path("players");
         List<MlbBatter> startingBatters = new ArrayList<>();
         List<MlbBatter> substituteBatters = new ArrayList<>();
         Set<Long> batterIds = new HashSet<>();
-        List<String> reliefPitchers = new ArrayList<>();
+        List<MlbPitcher> reliefPitchers = new ArrayList<>();
         Set<Long> pitcherIds = new HashSet<>();
-        String startingPitcher = "-";
-        String finalPitcher = "-";
+        MlbPitcher startingPitcher = null;
+        MlbPitcher finalPitcher = null;
 
         // battersの選手名とbattingOrderを取得し、打順情報がない選手や不正な値を除外します。
         JsonNode batters = team.path("batters");
@@ -304,8 +304,14 @@ public class MlbApiService {
                     continue;
                 }
 
+                // 同じboxscoreの試合別打撃成績を取得し、整数以外や未設定の項目はnullにします。
+                JsonNode batting = players.path("ID" + id.asLong()).path("stats").path("batting");
+                MlbBatter batter = new MlbBatter(battingSlot, name, substitutionOrder > 0, substitutionOrder,
+                        getBattingStat(batting, "atBats"), getBattingStat(batting, "hits"),
+                        getBattingStat(batting, "homeRuns"), getBattingStat(batting, "baseOnBalls"),
+                        getBattingStat(batting, "stolenBases"));
+
                 // 交代順が0なら先発、それ以外は途中出場として別のリストに追加します。
-                MlbBatter batter = new MlbBatter(battingSlot, name, substitutionOrder > 0, substitutionOrder);
                 if (batter.isSubstitute()) {
                     substituteBatters.add(batter);
                 } else {
@@ -319,16 +325,16 @@ public class MlbApiService {
         if (pitchers.isArray()) {
             for (int index = 0; index < pitchers.size(); index++) {
                 JsonNode id = pitchers.path(index);
-                String name = getPlayerName(players, id);
-                if (name == null || !pitcherIds.add(id.asLong())) {
+                MlbPitcher pitcher = getPitcher(players, id);
+                if (pitcher == null || !pitcherIds.add(id.asLong())) {
                     continue;
                 }
                 if (index == 0) {
-                    startingPitcher = name;
+                    startingPitcher = pitcher;
                 } else if (index == pitchers.size() - 1) {
-                    finalPitcher = name;
+                    finalPitcher = pitcher;
                 } else {
-                    reliefPitchers.add(name);
+                    reliefPitchers.add(pitcher);
                 }
             }
         }
@@ -338,8 +344,51 @@ public class MlbApiService {
         substituteBatters.sort(Comparator.comparingInt(MlbBatter::getBattingSlot)
                 .thenComparingInt(MlbBatter::getSubstitutionOrder));
 
-        // 情報がない場合も空リストとハイフンを持つチーム情報を返します。
+        // 該当する選手がいない場合は空リストやnullを持つチーム情報を返します。
         return new MlbTeamPlayers(startingBatters, substituteBatters, startingPitcher, reliefPitchers, finalPitcher);
+    }
+
+    /**
+     * 指定された打撃成績を返し、Integerで保持できない値はnullにします。
+     *
+     * @param batting 試合別打撃成績
+     * @param fieldName 取得する成績の項目名
+     * @return 整数の成績。未設定、整数以外、範囲外の場合はnull
+     */
+    private Integer getBattingStat(JsonNode batting, String fieldName) {
+        // 整数型とIntegerの範囲を確認し、欠損や不正値を0に変換せずnullとして扱います。
+        JsonNode value = batting.path(fieldName);
+        return value.isIntegralNumber() && value.canConvertToInt() ? value.asInt() : null;
+    }
+
+    /**
+     * 投手の試合別成績を取得し、IDや名前が取得できない場合はnullを返します。
+     */
+    private MlbPitcher getPitcher(JsonNode players, JsonNode id) {
+        // 選手IDと名前を確認し、名前を取得できない投手だけをスキップします。
+        String name = getPlayerName(players, id);
+        if (name == null) {
+            return null;
+        }
+
+        // 同じboxscoreの試合別投球成績を参照し、投球回は野球表記の文字列として保持します。
+        JsonNode pitching = players.path("ID" + id.asLong()).path("stats").path("pitching");
+        String inningsPitched = pitching.path("inningsPitched").asString("-");
+
+        // 数値項目が整数で存在する場合だけ取得し、未設定や整数以外の場合はnullにします。
+        JsonNode hitsNode = pitching.path("hits");
+        JsonNode runsNode = pitching.path("runs");
+        JsonNode earnedRunsNode = pitching.path("earnedRuns");
+        JsonNode walksNode = pitching.path("baseOnBalls");
+        JsonNode strikeOutsNode = pitching.path("strikeOuts");
+        Integer hits = hitsNode.isIntegralNumber() ? hitsNode.asInt() : null;
+        Integer runs = runsNode.isIntegralNumber() ? runsNode.asInt() : null;
+        Integer earnedRuns = earnedRunsNode.isIntegralNumber() ? earnedRunsNode.asInt() : null;
+        Integer baseOnBalls = walksNode.isIntegralNumber() ? walksNode.asInt() : null;
+        Integer strikeOuts = strikeOutsNode.isIntegralNumber() ? strikeOutsNode.asInt() : null;
+
+        // 投手名と取得できた投球成績を1人分のオブジェクトにまとめて返します。
+        return new MlbPitcher(name, inningsPitched, hits, runs, earnedRuns, baseOnBalls, strikeOuts);
     }
 
     /**

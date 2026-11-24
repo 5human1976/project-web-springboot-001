@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLB 選手詳細</title>
+    <style>
+        .yearly-stats-section {
+            margin: 32px 0 24px;
+        }
+
+        .stats-description {
+            margin-bottom: 16px;
+        }
+
+        table.yearly-stats {
+            border-collapse: collapse;
+        }
+
+        table.yearly-stats th,
+        table.yearly-stats td {
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        table.yearly-stats th {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>MLB 選手詳細</h1>
+        <section th:if="${playerProfile != null}">
+            <h2 th:text="${playerProfile.fullName}"></h2>
+            <p><small>playerId: <span th:text="${playerProfile.playerId}"></span></small></p>
+            <p>背番号：<span th:text="${playerProfile.primaryNumber}"></span></p>
+            <p>所属チーム：<span th:text="${playerProfile.currentTeam}"></span></p>
+            <p>ポジション：<span th:text="${playerProfile.primaryPosition}"></span></p>
+            <p>投打：<span th:text="${playerProfile.batSide}"></span> / <span th:text="${playerProfile.pitchHand}"></span></p>
+            <p>生年月日：<span th:text="${playerProfile.birthDate}"></span></p>
+            <p>年齢：<span th:text="${playerProfile.age != null ? playerProfile.age + '歳' : '-'}"></span></p>
+            <p>出身地：<span th:text="${playerProfile.birthPlace}"></span></p>
+            <p>身長：<span th:text="${playerProfile.heightCm != null ? playerProfile.heightCm + ' cm' : '-'}"></span></p>
+            <p>体重：<span th:text="${playerProfile.weightKg != null ? playerProfile.weightKg + ' kg' : '-'}"></span></p>
+            <p>MLBデビュー：<span th:text="${playerProfile.mlbDebutDate}"></span></p>
+        </section>
+        <p th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
+        <section class="yearly-stats-section">
+            <h2>年度別打撃成績</h2>
+            <p th:if="${hittingErrorMessage != null}" th:text="${hittingErrorMessage}" role="alert"></p>
+            <div th:if="${hittingSeasons != null}">
+                <p th:if="${#lists.isEmpty(hittingSeasons)}">年度別打撃成績がありません。</p>
+                <div th:if="${!#lists.isEmpty(hittingSeasons)}">
+                    <p class="stats-description">G=試合 / AB=打数 / H=安打 / HR=本塁打 / RBI=打点 / BB=四球 / SO=三振 / SB=盗塁 / AVG=打率 / OPS=出塁率＋長打率</p>
+                    <table class="yearly-stats">
+                        <thead>
+                            <tr>
+                                <th scope="col">年度</th>
+                                <th scope="col">G</th>
+                                <th scope="col">AB</th>
+                                <th scope="col">H</th>
+                                <th scope="col">HR</th>
+                                <th scope="col">RBI</th>
+                                <th scope="col">BB</th>
+                                <th scope="col">SO</th>
+                                <th scope="col">SB</th>
+                                <th scope="col">AVG</th>
+                                <th scope="col">OPS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="season : ${hittingSeasons}">
+                                <th scope="row" th:text="${season.season}"></th>
+                                <td th:text="${season.gamesPlayed != null ? season.gamesPlayed : '-'}"></td>
+                                <td th:text="${season.atBats != null ? season.atBats : '-'}"></td>
+                                <td th:text="${season.hits != null ? season.hits : '-'}"></td>
+                                <td th:text="${season.homeRuns != null ? season.homeRuns : '-'}"></td>
+                                <td th:text="${season.rbi != null ? season.rbi : '-'}"></td>
+                                <td th:text="${season.baseOnBalls != null ? season.baseOnBalls : '-'}"></td>
+                                <td th:text="${season.strikeOuts != null ? season.strikeOuts : '-'}"></td>
+                                <td th:text="${season.stolenBases != null ? season.stolenBases : '-'}"></td>
+                                <td th:text="${season.avg}"></td>
+                                <td th:text="${season.ops}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        <section class="yearly-stats-section"
+                 th:if="${pitchingErrorMessage != null or (pitchingSeasons != null and !#lists.isEmpty(pitchingSeasons))}">
+            <h2>年度別投手成績</h2>
+            <p th:if="${pitchingErrorMessage != null}" th:text="${pitchingErrorMessage}" role="alert"></p>
+            <div th:if="${pitchingSeasons != null and !#lists.isEmpty(pitchingSeasons)}">
+                <p class="stats-description">G=登板 / GS=先発 / W=勝利 / L=敗戦 / SV=セーブ / ERA=防御率 / IP=投球回 / H=被安打 / ER=自責点 / BB=四球 / K=奪三振 / WHIP=1投球回あたりの走者数</p>
+                <table class="yearly-stats">
+                    <thead>
+                        <tr>
+                            <th scope="col">年度</th>
+                            <th scope="col">G</th>
+                            <th scope="col">GS</th>
+                            <th scope="col">W</th>
+                            <th scope="col">L</th>
+                            <th scope="col">SV</th>
+                            <th scope="col">ERA</th>
+                            <th scope="col">IP</th>
+                            <th scope="col">H</th>
+                            <th scope="col">ER</th>
+                            <th scope="col">BB</th>
+                            <th scope="col">K</th>
+                            <th scope="col">WHIP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="season : ${pitchingSeasons}">
+                            <th scope="row" th:text="${season.season}"></th>
+                            <td th:text="${season.gamesPlayed != null ? season.gamesPlayed : '-'}"></td>
+                            <td th:text="${season.gamesStarted != null ? season.gamesStarted : '-'}"></td>
+                            <td th:text="${season.wins != null ? season.wins : '-'}"></td>
+                            <td th:text="${season.losses != null ? season.losses : '-'}"></td>
+                            <td th:text="${season.saves != null ? season.saves : '-'}"></td>
+                            <td th:text="${season.era}"></td>
+                            <td th:text="${season.inningsPitched}"></td>
+                            <td th:text="${season.hits != null ? season.hits : '-'}"></td>
+                            <td th:text="${season.earnedRuns != null ? season.earnedRuns : '-'}"></td>
+                            <td th:text="${season.baseOnBalls != null ? season.baseOnBalls : '-'}"></td>
+                            <td th:text="${season.strikeOuts != null ? season.strikeOuts : '-'}"></td>
+                            <td th:text="${season.whip}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <a th:if="${gamePk != null}"
+           th:href="@{/mlb/game/{gamePk}(gamePk=${gamePk}, targetDate=${targetDate})}">← 試合詳細へ戻る</a>
+        <a th:if="${gamePk == null}" th:href="@{/mlb}">← 試合一覧へ戻る</a>
+    </main>
+</body>
+
+</html>

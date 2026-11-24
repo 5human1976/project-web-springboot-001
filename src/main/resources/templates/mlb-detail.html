@@ -145,7 +145,10 @@
                     <tbody>
                         <tr th:each="batter : ${gameDetail.awayPlayers.startingBatters}">
                             <td th:text="${batter.battingSlot + '番'}"></td>
-                            <th scope="row" class="team-name" th:text="${batter.playerName}"></th>
+                            <th scope="row" class="team-name">
+                                <a th:href="@{/mlb/player/{playerId}(playerId=${batter.playerId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                                   th:text="${batter.playerName}"></a>
+                            </th>
                             <td th:text="${batter.atBats != null ? batter.atBats : '-'}"></td>
                             <td th:text="${batter.hits != null ? batter.hits : '-'}"></td>
                             <td th:text="${batter.homeRuns != null ? batter.homeRuns : '-'}"></td>
@@ -172,7 +175,10 @@
                         <tbody>
                             <tr th:each="batter : ${gameDetail.awayPlayers.substituteBatters}">
                                 <td th:text="${batter.battingSlot + '番枠'}"></td>
-                                <th scope="row" class="team-name" th:text="${batter.playerName}"></th>
+                                <th scope="row" class="team-name">
+                                    <a th:href="@{/mlb/player/{playerId}(playerId=${batter.playerId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                                       th:text="${batter.playerName}"></a>
+                                </th>
                                 <td th:text="${batter.atBats != null ? batter.atBats : '-'}"></td>
                                 <td th:text="${batter.hits != null ? batter.hits : '-'}"></td>
                                 <td th:text="${batter.homeRuns != null ? batter.homeRuns : '-'}"></td>
@@ -199,7 +205,10 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <th scope="row" class="team-name">
+                                <a th:href="@{/mlb/player/{playerId}(playerId=${pitcher.playerId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                                   th:text="${pitcher.playerName}"></a>
+                            </th>
                             <td th:text="${pitcher.inningsPitched}"></td>
                             <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
                             <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
@@ -225,7 +234,10 @@
                     </thead>
                     <tbody>
                         <tr th:each="pitcher : ${gameDetail.awayPlayers.reliefPitchers}">
-                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <th scope="row" class="team-name">
+                                <a th:href="@{/mlb/player/{playerId}(playerId=${pitcher.playerId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                                   th:text="${pitcher.playerName}"></a>
+                            </th>
                             <td th:text="${pitcher.inningsPitched}"></td>
                             <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
                             <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
@@ -251,7 +263,10 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <th scope="row" class="team-name">
+                                <a th:href="@{/mlb/player/{playerId}(playerId=${pitcher.playerId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                                   th:text="${pitcher.playerName}"></a>
+                            </th>
                             <td th:text="${pitcher.inningsPitched}"></td>
                             <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
                             <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
@@ -282,7 +297,10 @@
                     <tbody>
                         <tr th:each="batter : ${gameDetail.homePlayers.startingBatters}">
                             <td th:text="${batter.battingSlot + '番'}"></td>
-                            <th scope="row" class="team-name" th:text="${batter.playerName}"></th>
+                            <th scope="row" class="team-name">
+                                <a th:href="@{/mlb/player/{playerId}(playerId=${batter.playerId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                                   th:text="${batter.playerName}"></a>
+                            </th>
                             <td th:text="${batter.atBats != null ? batter.atBats : '-'}"></td>
                             <td th:text="${batter.hits != null ? batter.hits : '-'}"></td>
                             <td th:text="${batter.homeRuns != null ? batter.homeRuns : '-'}"></td>
@@ -309,7 +327,10 @@
                         <tbody>
                             <tr th:each="batter : ${gameDetail.homePlayers.substituteBatters}">
                                 <td th:text="${batter.battingSlot + '番枠'}"></td>
-                                <th scope="row" class="team-name" th:text="${batter.playerName}"></th>
+                                <th scope="row" class="team-name">
+                                    <a th:href="@{/mlb/player/{playerId}(playerId=${batter.playerId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                                       th:text="${batter.playerName}"></a>
+                                </th>
                                 <td th:text="${batter.atBats != null ? batter.atBats : '-'}"></td>
                                 <td th:text="${batter.hits != null ? batter.hits : '-'}"></td>
                                 <td th:text="${batter.homeRuns != null ? batter.homeRuns : '-'}"></td>
@@ -336,7 +357,10 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <th scope="row" class="team-name">
+                                <a th:href="@{/mlb/player/{playerId}(playerId=${pitcher.playerId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                                   th:text="${pitcher.playerName}"></a>
+                            </th>
                             <td th:text="${pitcher.inningsPitched}"></td>
                             <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
                             <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
@@ -362,7 +386,10 @@
                     </thead>
                     <tbody>
                         <tr th:each="pitcher : ${gameDetail.homePlayers.reliefPitchers}">
-                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <th scope="row" class="team-name">
+                                <a th:href="@{/mlb/player/{playerId}(playerId=${pitcher.playerId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                                   th:text="${pitcher.playerName}"></a>
+                            </th>
                             <td th:text="${pitcher.inningsPitched}"></td>
                             <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
                             <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>
@@ -388,7 +415,10 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <th scope="row" class="team-name" th:text="${pitcher.playerName}"></th>
+                            <th scope="row" class="team-name">
+                                <a th:href="@{/mlb/player/{playerId}(playerId=${pitcher.playerId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                                   th:text="${pitcher.playerName}"></a>
+                            </th>
                             <td th:text="${pitcher.inningsPitched}"></td>
                             <td th:text="${pitcher.hits != null ? pitcher.hits : '-'}"></td>
                             <td th:text="${pitcher.runs != null ? pitcher.runs : '-'}"></td>

@@ -17,9 +17,10 @@ import org.springframework.web.bind.annotation.RequestParam;
  * 【概要】
  * /mlbへのGETリクエストに対してMLB試合情報の画面を表示するクラスです。
  * 対象日の試合一覧や指定された試合の詳細情報を取得し、Thymeleafの画面に渡します。
+ * 選手詳細画面にはプロフィールと元の試合へ戻るための情報を渡します。
  *
  * 【作成日】2026-10-21
- * 【最終更新日】2026-11-18
+ * 【最終更新日】2026-11-24
  *
  * @author masa
  * @version 1.0
@@ -101,5 +102,61 @@ public class MlbController {
 
         // Thymeleafでtemplates/mlb-detail.htmlを表示するためのビュー名を返します。
         return "mlb-detail";
+    }
+
+    /**
+     * 選手プロフィールと元の試合へ戻るための情報を選手詳細画面に渡します。
+     *
+     * @param playerId URLのパスに含まれるMLBの選手識別ID
+     * @param gamePk 戻り先の試合ID。未指定の場合はnull
+     * @param targetDate 一覧へ戻る際の検索対象日。未指定の場合はnull
+     * @param model 画面に渡すデータを保持するモデル
+     * @return 選手詳細のテンプレートを指定するビュー名
+     */
+    @GetMapping("/mlb/player/{playerId}")
+    public String player(
+            @PathVariable("playerId") long playerId,
+            @RequestParam(name = "gamePk", required = false) Long gamePk,
+            @RequestParam(name = "targetDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate,
+            Model model) {
+        // 選手IDと戻り先の試合ID、検索対象日を画面へ渡します。
+        model.addAttribute("playerId", playerId);
+        model.addAttribute("gamePk", gamePk);
+        model.addAttribute("targetDate", targetDate);
+
+        try {
+            // 選手IDでプロフィールを取得し、選手詳細画面に渡します。
+            MlbPlayerProfile playerProfile = mlbApiService.getPlayerProfile(playerId);
+            model.addAttribute("playerProfile", playerProfile);
+        } catch (IllegalStateException e) {
+            // 取得失敗を画面に表示し、設定済みの戻り先情報を保持します。
+            model.addAttribute("errorMessage", "MLB選手プロフィールの取得に失敗しました。");
+        }
+
+        try {
+            // プロフィールとは独立して年度別打撃成績を取得し、0件も正常結果として渡します。
+            List<MlbPlayerHittingSeason> hittingSeasons =
+                    mlbApiService.getPlayerHittingYearByYear(playerId);
+            model.addAttribute("hittingSeasons", hittingSeasons);
+        } catch (IllegalStateException e) {
+            // 成績だけの取得失敗を表示し、プロフィールと戻り先情報を保持します。
+            model.addAttribute("hittingErrorMessage", "年度別打撃成績の取得に失敗しました。");
+        }
+
+
+        try {
+            // 年度別投手成績を独立して取得し、投手成績のない選手も正常結果として扱います。
+            List<MlbPlayerPitchingSeason> pitchingSeasons =
+                    mlbApiService.getPlayerPitchingYearByYear(playerId);
+            model.addAttribute("pitchingSeasons", pitchingSeasons);
+        } catch (IllegalStateException e) {
+            // 投手成績だけの取得失敗を表示し、他の成績と戻り先情報を保持します。
+            model.addAttribute("pitchingErrorMessage", "年度別投手成績の取得に失敗しました。");
+        }
+
+
+        // プロフィール、年度別成績、エラーメッセージを表示するビュー名を返します。
+        return "mlb-player";
     }
 }

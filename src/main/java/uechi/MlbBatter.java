@@ -5,16 +5,19 @@ package uechi;
  * MlbBatter.java
  *
  * 【概要】
- * MLBの野手1人分の選手名と打順、交代順、試合別打撃成績を保持するクラスです。
+ * MLBの野手1人分の選手ID、選手名と打順、交代順、試合別打撃成績を保持するクラスです。
  * 詳細画面で先発野手と途中出場野手を分けて表示するために使用します。
  *
  * 【作成日】2026-11-19
- * 【最終更新日】2026-11-23
+ * 【最終更新日】2026-11-24
  *
  * @author masa
  * @version 1.0
  */
 public class MlbBatter {
+
+    /** MLBの選手識別ID。 */
+    private final long playerId;
 
     /** 1〜9の打順枠。 */
     private final int battingSlot;
@@ -44,8 +47,9 @@ public class MlbBatter {
     private final Integer stolenBases;
 
     /**
-     * 野手の選手名と打順、交代順、試合別打撃成績を保持します。
+     * 野手の選手ID、選手名と打順、交代順、試合別打撃成績を保持します。
      *
+     * @param playerId MLBの選手識別ID
      * @param battingSlot 1〜9の打順枠
      * @param playerName 選手名
      * @param substitute 途中出場の場合はtrue
@@ -56,9 +60,10 @@ public class MlbBatter {
      * @param baseOnBalls 試合での四球数。未設定の場合はnull
      * @param stolenBases 試合での盗塁数。未設定の場合はnull
      */
-    public MlbBatter(int battingSlot, String playerName, boolean substitute, int substitutionOrder,
+    public MlbBatter(long playerId, int battingSlot, String playerName, boolean substitute, int substitutionOrder,
             Integer atBats, Integer hits, Integer homeRuns, Integer baseOnBalls, Integer stolenBases) {
-        // 引数で受け取った選手名と打順、途中出場の判定、交代順を各フィールドに設定します。
+        // 引数で受け取った選手ID、選手名と打順、途中出場の判定、交代順を各フィールドに設定します。
+        this.playerId = playerId;
         this.battingSlot = battingSlot;
         this.playerName = playerName;
         this.substitute = substitute;
@@ -70,6 +75,16 @@ public class MlbBatter {
         this.homeRuns = homeRuns;
         this.baseOnBalls = baseOnBalls;
         this.stolenBases = stolenBases;
+    }
+
+    /**
+     * MLBの選手識別IDを返します。
+     *
+     * @return MLBの選手識別ID
+     */
+    public long getPlayerId() {
+        // 保持している選手IDを返します。
+        return playerId;
     }
 
     /**

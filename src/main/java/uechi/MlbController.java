@@ -1,6 +1,7 @@
 package uechi;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
@@ -17,10 +18,10 @@ import org.springframework.web.bind.annotation.RequestParam;
  * 【概要】
  * /mlbへのGETリクエストに対してMLB試合情報の画面を表示するクラスです。
  * 対象日の試合一覧や指定された試合の詳細情報を取得し、Thymeleafの画面に渡します。
- * 選手詳細画面にはプロフィールと元の試合へ戻るための情報を渡します。
+ * 選手詳細画面にはプロフィールと元のチームや試合へ戻るための情報を渡します。
  *
  * 【作成日】2026-10-21
- * 【最終更新日】2026-11-24
+ * 【最終更新日】2026-11-25
  *
  * @author masa
  * @version 1.0
@@ -105,9 +106,11 @@ public class MlbController {
     }
 
     /**
-     * 選手プロフィールと元の試合へ戻るための情報を選手詳細画面に渡します。
+     * 選手プロフィールと元のチームや試合へ戻るための情報を選手詳細画面に渡します。
      *
      * @param playerId URLのパスに含まれるMLBの選手識別ID
+     * @param teamId 戻り先のチームID。未指定の場合はnull
+     * @param season チーム詳細で選択した年度。未指定の場合はnull
      * @param gamePk 戻り先の試合ID。未指定の場合はnull
      * @param targetDate 一覧へ戻る際の検索対象日。未指定の場合はnull
      * @param model 画面に渡すデータを保持するモデル
@@ -116,12 +119,16 @@ public class MlbController {
     @GetMapping("/mlb/player/{playerId}")
     public String player(
             @PathVariable("playerId") long playerId,
+            @RequestParam(name = "teamId", required = false) Long teamId,
+            @RequestParam(name = "season", required = false) Integer season,
             @RequestParam(name = "gamePk", required = false) Long gamePk,
             @RequestParam(name = "targetDate", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate,
             Model model) {
-        // 選手IDと戻り先の試合ID、検索対象日を画面へ渡します。
+        // 選手IDと戻り先のチームID、選択年度、試合ID、検索対象日を画面へ渡します。
         model.addAttribute("playerId", playerId);
+        model.addAttribute("teamId", teamId);
+        model.addAttribute("season", season);
         model.addAttribute("gamePk", gamePk);
         model.addAttribute("targetDate", targetDate);
 
@@ -159,4 +166,84 @@ public class MlbController {
         // プロフィール、年度別成績、エラーメッセージを表示するビュー名を返します。
         return "mlb-player";
     }
+
+    /**
+     * チーム基本情報と指定年度の選手一覧、戻り先を画面に渡します。
+     *
+     * @param teamId URLのチーム識別ID
+     * @param season 指定年度。未指定の場合は対象日または現在年を使用
+     * @param gamePk 戻り先の試合ID
+     * @param targetDate 一覧へ戻る際の検索対象日
+     * @param model 画面に渡すモデル
+     * @return チーム詳細のビュー名
+     */
+    @GetMapping("/mlb/team/{teamId}")
+    public String team(
+            @PathVariable("teamId") long teamId,
+            @RequestParam(name = "season", required = false) String season,
+            @RequestParam(name = "gamePk", required = false) Long gamePk,
+            @RequestParam(name = "targetDate", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate,
+            Model model) {
+        // 取得の成否によらず戻り先と年度入力の値を保持します。
+        int currentYear = LocalDate.now(ZoneId.of("Asia/Tokyo")).getYear();
+        String selectedSeason = season != null ? season
+                : String.valueOf(targetDate != null ? targetDate.getYear() : currentYear);
+        model.addAttribute("teamId", teamId);
+        model.addAttribute("gamePk", gamePk);
+        model.addAttribute("targetDate", targetDate);
+        model.addAttribute("season", selectedSeason);
+        model.addAttribute("currentYear", currentYear);
+
+        try {
+            // ロスター取得とは独立してチーム基本情報を設定します。
+            model.addAttribute("teamProfile", mlbApiService.getTeamProfile(teamId));
+        } catch (IllegalStateException e) {
+            // 基本情報だけの取得失敗を表示します。
+            model.addAttribute("errorMessage", "チーム基本情報の取得に失敗しました。");
+        }
+
+        try {
+            // 明示された年度を優先し、整数の範囲を確認してから一覧を取得します。
+            int year = Integer.parseInt(selectedSeason);
+            if (year < 1876 || year > currentYear) {
+                throw new NumberFormatException("年度が範囲外です。");
+            }
+            model.addAttribute("rosterPlayers", mlbApiService.getTeamRoster(teamId, year));
+        } catch (NumberFormatException e) {
+            // 不正な入力を画面に表示し、プロフィールと戻り先を保持します。
+            model.addAttribute("rosterErrorMessage", "年度は1876年から" + currentYear + "年までの整数で指定してください。");
+        } catch (IllegalStateException e) {
+            // ロスターのみ失敗した場合も取得済みのプロフィールを保持します。
+            model.addAttribute("rosterErrorMessage", "年度別選手一覧の取得に失敗しました。");
+        }
+
+        // 基本情報と年度別選手一覧を表示するビュー名を返します。
+        return "mlb-team";
+    }
+
+
+    /**
+     * 2025年のレギュラーシーズン順位表を画面に渡します。
+     *
+     * @param model 画面に渡すデータを保持するモデル
+     * @return 順位表のテンプレートを指定するビュー名
+     */
+    @GetMapping("/mlb/standings")
+    public String standings(Model model) {
+        // 今回は2025年を固定し、取得結果にかかわらず画面に年度を渡します。
+        int season = 2025;
+        model.addAttribute("season", season);
+        try {
+            // AL・NLの地区別順位表を取得してモデルへ設定します。
+            List<MlbStandingDivision> divisions = mlbApiService.getStandings(season);
+            model.addAttribute("divisions", divisions);
+        } catch (IllegalStateException e) {
+            // 取得失敗時も戻るリンクを利用できるよう、同じ画面でエラーを表示します。
+            model.addAttribute("errorMessage", "MLBレギュラーシーズン順位情報の取得に失敗しました。");
+        }
+        // レギュラーシーズン順位表のビュー名を返します。
+        return "mlb-standings";
+    }
+
 }

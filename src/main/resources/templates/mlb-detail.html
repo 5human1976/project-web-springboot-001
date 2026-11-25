@@ -79,12 +79,22 @@
             <p class="status" th:text="${gameDetail.status}"></p>
             <div class="matchup">
                 <div class="team-score">
-                    <span th:text="${gameDetail.awayTeam}"></span>
+                    <span>
+                        <a th:if="${gameDetail.awayTeamId != null}"
+                           th:href="@{/mlb/team/{teamId}(teamId=${gameDetail.awayTeamId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                           th:text="${gameDetail.awayTeam}"></a>
+                        <span th:if="${gameDetail.awayTeamId == null}" th:text="${gameDetail.awayTeam}"></span>
+                    </span>
                     <span class="score" th:text="${gameDetail.awayScore != null ? gameDetail.awayScore : '-'}"></span>
                 </div>
                 <p class="versus">VS</p>
                 <div class="team-score">
-                    <span th:text="${gameDetail.homeTeam}"></span>
+                    <span>
+                        <a th:if="${gameDetail.homeTeamId != null}"
+                           th:href="@{/mlb/team/{teamId}(teamId=${gameDetail.homeTeamId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                           th:text="${gameDetail.homeTeam}"></a>
+                        <span th:if="${gameDetail.homeTeamId == null}" th:text="${gameDetail.homeTeam}"></span>
+                    </span>
                     <span class="score" th:text="${gameDetail.homeScore != null ? gameDetail.homeScore : '-'}"></span>
                 </div>
             </div>
@@ -104,7 +114,12 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <th scope="row" class="team-name" th:text="${gameDetail.awayTeam}"></th>
+                        <th scope="row" class="team-name">
+                            <a th:if="${gameDetail.awayTeamId != null}"
+                               th:href="@{/mlb/team/{teamId}(teamId=${gameDetail.awayTeamId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                               th:text="${gameDetail.awayTeam}"></a>
+                            <span th:if="${gameDetail.awayTeamId == null}" th:text="${gameDetail.awayTeam}"></span>
+                        </th>
                         <td th:each="inning : ${gameDetail.innings}"
                             th:text="${inning.awayRuns != null ? inning.awayRuns : '-'}"></td>
                         <td class="total" th:text="${gameDetail.awayScore != null ? gameDetail.awayScore : '-'}"></td>
@@ -112,7 +127,12 @@
                         <td class="total" th:text="${gameDetail.awayErrors != null ? gameDetail.awayErrors : '-'}"></td>
                     </tr>
                     <tr>
-                        <th scope="row" class="team-name" th:text="${gameDetail.homeTeam}"></th>
+                        <th scope="row" class="team-name">
+                            <a th:if="${gameDetail.homeTeamId != null}"
+                               th:href="@{/mlb/team/{teamId}(teamId=${gameDetail.homeTeamId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                               th:text="${gameDetail.homeTeam}"></a>
+                            <span th:if="${gameDetail.homeTeamId == null}" th:text="${gameDetail.homeTeam}"></span>
+                        </th>
                         <td th:each="inning : ${gameDetail.innings}"
                             th:text="${inning.homeRuns != null ? inning.homeRuns : '-'}"></td>
                         <td class="total" th:text="${gameDetail.homeScore != null ? gameDetail.homeScore : '-'}"></td>
@@ -127,7 +147,12 @@
             <p>セーブ：<span th:text="${gameDetail.savePitcher}"></span></p>
             <h2>出場選手</h2>
             <section>
-                <h3 th:text="${gameDetail.awayTeam}"></h3>
+                <h3>
+                    <a th:if="${gameDetail.awayTeamId != null}"
+                       th:href="@{/mlb/team/{teamId}(teamId=${gameDetail.awayTeamId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                       th:text="${gameDetail.awayTeam}"></a>
+                    <span th:if="${gameDetail.awayTeamId == null}" th:text="${gameDetail.awayTeam}"></span>
+                </h3>
                 <h4>野手</h4>
                 <p>AB=打数 / H=安打 / HR=本塁打 / BB=四球 / SB=盗塁</p>
                 <table class="batting-stats" th:if="${!#lists.isEmpty(gameDetail.awayPlayers.startingBatters)}">
@@ -279,7 +304,12 @@
                 <p th:if="${gameDetail.awayPlayers.finalPitcher == null}">-</p>
             </section>
             <section>
-                <h3 th:text="${gameDetail.homeTeam}"></h3>
+                <h3>
+                    <a th:if="${gameDetail.homeTeamId != null}"
+                       th:href="@{/mlb/team/{teamId}(teamId=${gameDetail.homeTeamId}, gamePk=${gameDetail.gamePk}, targetDate=${targetDate})}"
+                       th:text="${gameDetail.homeTeam}"></a>
+                    <span th:if="${gameDetail.homeTeamId == null}" th:text="${gameDetail.homeTeam}"></span>
+                </h3>
                 <h4>野手</h4>
                 <p>AB=打数 / H=安打 / HR=本塁打 / BB=四球 / SB=盗塁</p>
                 <table class="batting-stats" th:if="${!#lists.isEmpty(gameDetail.homePlayers.startingBatters)}">

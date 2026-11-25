@@ -33,11 +33,11 @@ import tools.jackson.databind.json.JsonMapper;
  * MlbApiService.java
  *
  * 【概要】
- * MLB Stats APIから対象日の試合一覧、試合詳細、選手プロフィールを取得するクラスです。
+ * MLB Stats APIから試合情報、選手情報、チーム基本情報と年度別ロスターを取得するクラスです。
  * API通信とJSON解析、日時変換、重複排除を担当します。
  *
  * 【作成日】2026-10-27
- * 【最終更新日】2026-11-24
+ * 【最終更新日】2026-11-25
  *
  * @author masa
  * @version 1.0
@@ -50,6 +50,9 @@ public class MlbApiService {
 
     // 試合IDを指定して詳細情報を取得するAPIのベースURLを定義します。
     private static final String GAME_DETAIL_URL = "https://statsapi.mlb.com/api/v1.1/game/";
+
+    // チーム基本情報と年度別ロスターを取得するAPIのベースURLを定義します。
+    private static final String TEAM_URL = "https://statsapi.mlb.com/api/v1/teams/";
 
     // 選手の基本情報を取得するAPIのベースURLを定義します。
     private static final String PLAYER_PROFILE_URL = "https://statsapi.mlb.com/api/v1/people/";
@@ -206,6 +209,15 @@ public class MlbApiService {
             String dateTime = gameData.path("datetime").path("dateTime").asString("");
             String gameDateJst = Instant.parse(dateTime).atZone(JST).format(JST_FORMAT);
 
+            // 両チームのIDを取得し、Longの範囲に収まる正の整数だけを保持します。
+            JsonNode awayTeamIdNode = gameData.path("teams").path("away").path("id");
+            Long awayTeamId = awayTeamIdNode.isIntegralNumber() && awayTeamIdNode.canConvertToLong()
+                    && awayTeamIdNode.asLong() > 0 ? awayTeamIdNode.asLong() : null;
+            JsonNode homeTeamIdNode = gameData.path("teams").path("home").path("id");
+            Long homeTeamId = homeTeamIdNode.isIntegralNumber() && homeTeamIdNode.canConvertToLong()
+                    && homeTeamIdNode.asLong() > 0 ? homeTeamIdNode.asLong() : null;
+
+
             // 試合の基本情報を取得し、未設定の文字列にはハイフンを設定します。
             String awayTeam = gameData.path("teams").path("away").path("name").asString("-");
             String homeTeam = gameData.path("teams").path("home").path("name").asString("-");
@@ -257,8 +269,8 @@ public class MlbApiService {
             MlbTeamPlayers homePlayers = getTeamPlayers(boxscoreTeams.path("home"));
 
             // 基本情報、スコアボード、投手結果、出場選手を詳細画面用にまとめて返します。
-            return new MlbGameDetail(responseGamePk, gameDateJst, awayTeam, awayScore,
-                    homeTeam, homeScore, status, venue, innings,
+            return new MlbGameDetail(responseGamePk, gameDateJst, awayTeamId, awayTeam, awayScore,
+                    homeTeamId, homeTeam, homeScore, status, venue, innings,
                     awayHits, awayErrors, homeHits, homeErrors,
                     winningPitcher, losingPitcher, savePitcher, awayPlayers, homePlayers);
         } catch (InterruptedException e) {
@@ -731,4 +743,216 @@ public class MlbApiService {
         String name = players.path("ID" + id.asLong()).path("person").path("fullName").asString("");
         return name.isBlank() ? null : name;
     }
+
+    /**
+     * チームIDに対応する基本情報を返します。
+     *
+     * @param teamId 正のチーム識別ID
+     * @return チーム詳細画面に表示する基本情報
+     * @throws IllegalStateException IDが不正、対象が存在しない、または取得に失敗した場合
+     */
+    public MlbTeamProfile getTeamProfile(long teamId) {
+        // 正のチームIDであることを通信前に確認します。
+        if (teamId <= 0) {
+            throw new IllegalStateException("チームIDが不正です。");
+        }
+        try {
+            // チーム基本情報を20秒のタイムアウト付きGETで取得します。
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(TEAM_URL + teamId))
+                    .timeout(Duration.ofSeconds(20)).GET().build();
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            // HTTPエラーと、対象チームが存在しないレスポンスを取得失敗として処理します。
+            if (response.statusCode() != 200) {
+                throw new IOException("MLB APIのHTTPステータス: " + response.statusCode());
+            }
+            JsonNode root = jsonMapper.readTree(response.body());
+            if (root == null || !root.path("teams").isArray() || root.path("teams").isEmpty()) {
+                throw new IOException("対象チームがありません。");
+            }
+            JsonNode team = root.path("teams").get(0);
+            JsonNode id = team.path("id");
+            if (!id.isIntegralNumber() || !id.canConvertToLong() || id.asLong() != teamId) {
+                throw new IOException("チームIDが一致しません。");
+            }
+            // 欠損した文字列をハイフンに補完し、画面用の基本情報を作成します。
+            return new MlbTeamProfile(teamId, getProfileText(team.path("name")),
+                    getProfileText(team.path("abbreviation")), getProfileText(team.path("league").path("name")),
+                    getProfileText(team.path("division").path("name")), getProfileText(team.path("venue").path("name")));
+        } catch (InterruptedException e) {
+            // 中断状態を復元し、呼び出し元へ取得失敗を通知します。
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("MLB APIへの通信が中断されました。", e);
+        } catch (IOException | JacksonException e) {
+            // 通信とJSON解析の失敗を既存の例外形式で通知します。
+            throw new IllegalStateException("チーム基本情報の取得に失敗しました。", e);
+        }
+    }
+
+    /**
+     * 指定年度のfullSeasonロスターを選手名の昇順で返します。
+     *
+     * @param teamId 正のチーム識別ID
+     * @param season 1876年から日本時間の現在年までの年度
+     * @return 重複した選手IDを除いた選手一覧。該当者がいない場合は空リスト
+     * @throws IllegalStateException IDや年度が不正、または取得に失敗した場合
+     */
+    public List<MlbTeamRosterPlayer> getTeamRoster(long teamId, int season) {
+        // 極端な年度や未来年、不正なチームIDでの通信を防止します。
+        if (teamId <= 0 || season < 1876 || season > LocalDate.now(JST).getYear()) {
+            throw new IllegalStateException("チームIDまたは年度が不正です。");
+        }
+        try {
+            // 指定年度のシーズン全体のロスターをGETで取得します。
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(TEAM_URL + teamId + "/roster?rosterType=fullSeason&season=" + season))
+                    .timeout(Duration.ofSeconds(20)).GET().build();
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            // HTTPエラーや配列の欠損を、正常な0件と区別します。
+            if (response.statusCode() != 200) {
+                throw new IOException("MLB APIのHTTPステータス: " + response.statusCode());
+            }
+            JsonNode root = jsonMapper.readTree(response.body());
+            if (root == null || !root.path("roster").isArray()) {
+                throw new IOException("MLB APIのroster配列がありません。");
+            }
+            List<MlbTeamRosterPlayer> players = new ArrayList<>();
+            Set<Long> playerIds = new HashSet<>();
+            for (JsonNode entry : root.path("roster")) {
+                // IDが不明でも名前があれば保持し、情報のない行だけ除外します。
+                JsonNode id = entry.path("person").path("id");
+                Long playerId = id.isIntegralNumber() && id.canConvertToLong() && id.asLong() > 0
+                        ? id.asLong() : null;
+                String name = getProfileText(entry.path("person").path("fullName"));
+                if (playerId == null && "-".equals(name)) {
+                    continue;
+                }
+                // 有効な選手IDが重複する行を除外します。
+                if (playerId != null && !playerIds.add(playerId)) {
+                    continue;
+                }
+                players.add(new MlbTeamRosterPlayer(playerId, name,
+                        getProfileText(entry.path("jerseyNumber")),
+                        getProfileText(entry.path("position").path("name"))));
+            }
+            // APIの返却順に依存せず、選手名の昇順に並べて返します。
+            players.sort(Comparator.comparing(MlbTeamRosterPlayer::getPlayerName));
+            return players;
+        } catch (InterruptedException e) {
+            // 中断状態を復元し、呼び出し元へ取得失敗を通知します。
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("MLB APIへの通信が中断されました。", e);
+        } catch (IOException | JacksonException e) {
+            // 通信とJSON解析の失敗を既存の例外形式で通知します。
+            throw new IllegalStateException("年度別選手一覧の取得に失敗しました。", e);
+        }
+    }
+
+
+    /**
+     * AL・NLのレギュラーシーズン順位表を地区順・順位順で返します。
+     *
+     * @param season 取得するシーズンの年度
+     * @return APIから取得できた地区の順位表。該当する地区がない場合は空リスト
+     * @throws IllegalStateException 年度が不正、API通信やJSON解析に失敗した場合
+     */
+    public List<MlbStandingDivision> getStandings(int season) {
+        // 不正な年度でAPIへアクセスしないように確認します。
+        if (season < 1876 || season > LocalDate.now(JST).getYear()) {
+            throw new IllegalStateException("年度が不正です。");
+        }
+        try {
+            // 既存のHTTPクライアントでAL・NLのレギュラーシーズン順位表を取得します。
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season="
+                            + season + "&standingsTypes=regularSeason"))
+                    .timeout(Duration.ofSeconds(20)).GET().build();
+            HttpResponse<String> response = httpClient.send(request,
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+
+            // HTTPエラーと不正なJSON構造を、正常な空結果と区別します。
+            if (response.statusCode() != 200) {
+                throw new IOException("MLB APIのHTTPステータス: " + response.statusCode());
+            }
+            JsonNode root = jsonMapper.readTree(response.body());
+            if (root == null || !root.path("records").isArray()) {
+                throw new IOException("MLB APIのrecords配列がありません。");
+            }
+            List<MlbStandingDivision> divisions = new ArrayList<>();
+            List<Integer> divisionOrder = List.of(201, 202, 200, 204, 205, 203);
+            for (JsonNode record : root.path("records")) {
+                // 地区を識別する整数IDと、チーム成績の配列を確認します。
+                JsonNode leagueNode = record.path("league").path("id");
+                JsonNode divisionNode = record.path("division").path("id");
+                if (!leagueNode.isIntegralNumber() || !leagueNode.canConvertToInt()
+                        || !divisionNode.isIntegralNumber() || !divisionNode.canConvertToInt()
+                        || !record.path("teamRecords").isArray()) {
+                    throw new IOException("MLB APIの地区情報の構造が不正です。");
+                }
+                int leagueId = leagueNode.asInt();
+                int divisionId = divisionNode.asInt();
+                if (!divisionOrder.contains(divisionId) || (leagueId != 103 && leagueId != 104)) {
+                    continue;
+                }
+                // 地区IDに対応する表示名を設定します。
+                String divisionName = switch (divisionId) {
+                    case 201 -> "ア・リーグ 東地区";
+                    case 202 -> "ア・リーグ 中地区";
+                    case 200 -> "ア・リーグ 西地区";
+                    case 204 -> "ナ・リーグ 東地区";
+                    case 205 -> "ナ・リーグ 中地区";
+                    case 203 -> "ナ・リーグ 西地区";
+                    default -> throw new IOException("対象外の地区IDです。");
+                };
+                List<MlbStandingTeam> teams = new ArrayList<>();
+                for (JsonNode teamRecord : record.path("teamRecords")) {
+                    // チームを特定できない行は、架空のIDを補わず取得失敗として扱います。
+                    JsonNode id = teamRecord.path("team").path("id");
+                    if (!id.isIntegralNumber() || !id.canConvertToLong() || id.asLong() <= 0) {
+                        throw new IOException("MLB APIのチームIDが不正です。");
+                    }
+                    // 順位の文字列を変換し、勝敗の0と欠損値を区別して保持します。
+                    teams.add(new MlbStandingTeam(id.asLong(),
+                            getProfileText(teamRecord.path("team").path("name")),
+                            parseDivisionRank(teamRecord.path("divisionRank")),
+                            getBattingStat(teamRecord, "wins"), getBattingStat(teamRecord, "losses"),
+                            getProfileText(teamRecord.path("winningPercentage")),
+                            getProfileText(teamRecord.path("gamesBack"))));
+                }
+                // 不正・欠損順位は末尾に置き、空のteamRecordsも正常結果として保持します。
+                teams.sort(Comparator.comparing(MlbStandingTeam::getDivisionRank,
+                        Comparator.nullsLast(Comparator.naturalOrder())));
+                divisions.add(new MlbStandingDivision(leagueId, divisionId, divisionName, teams));
+            }
+            // AL東・中・西、NL東・中・西の順序をJava側で保証します。
+            divisions.sort(Comparator.comparingInt(d -> divisionOrder.indexOf(d.getDivisionId())));
+            return divisions;
+        } catch (InterruptedException e) {
+            // 通信の中断状態を復元し、呼び出し元へ失敗を通知します。
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("MLB APIへの通信が中断されました。", e);
+        } catch (IOException | JacksonException e) {
+            // 既存の例外形式で順位情報の取得失敗をControllerへ通知します。
+            throw new IllegalStateException("MLB順位情報の取得に失敗しました。", e);
+        }
+    }
+
+    private Integer parseDivisionRank(JsonNode node) {
+        // APIの文字列または整数の順位だけを受け入れます。
+        if (!node.isString() && !node.isIntegralNumber()) {
+            return null;
+        }
+        try {
+            // 正の整数に変換できない順位を欠損値として扱います。
+            int rank = node.isIntegralNumber() && node.canConvertToInt()
+                    ? node.asInt() : Integer.parseInt(node.asString("").strip());
+            return rank > 0 ? rank : null;
+        } catch (NumberFormatException e) {
+            // 不正形式や整数範囲外の順位でも、他のチームの表示を継続します。
+            return null;
+        }
+    }
+
 }

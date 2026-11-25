@@ -11,7 +11,7 @@ import java.util.List;
  * Serviceが取得した基本情報、スコアボード、投手結果、出場選手名を詳細画面へ渡します。
  *
  * 【作成日】2026-11-17
- * 【最終更新日】2026-11-19
+ * 【最終更新日】2026-11-25
  *
  * @author masa
  * @version 1.0
@@ -24,11 +24,17 @@ public class MlbGameDetail {
     /** 日本時間での試合開始日時。 */
     private final String gameDateJst;
 
+    /** ビジターチームの識別ID。取得できない場合はnull。 */
+    private final Long awayTeamId;
+
     /** ビジターチーム名。 */
     private final String awayTeam;
 
     /** ビジターチームの得点。未設定の場合はnull。 */
     private final Integer awayScore;
+
+    /** ホームチームの識別ID。取得できない場合はnull。 */
+    private final Long homeTeamId;
 
     /** ホームチーム名。 */
     private final String homeTeam;
@@ -77,8 +83,10 @@ public class MlbGameDetail {
      *
      * @param gamePk MLB APIで試合を識別するID
      * @param gameDateJst 日本時間での試合開始日時
+     * @param awayTeamId ビジターチームの識別ID。取得できない場合はnull
      * @param awayTeam ビジターチーム名
      * @param awayScore ビジターチームの得点。未設定の場合はnull
+     * @param homeTeamId ホームチームの識別ID。取得できない場合はnull
      * @param homeTeam ホームチーム名
      * @param homeScore ホームチームの得点。未設定の場合はnull
      * @param status 試合の進行状況
@@ -94,8 +102,8 @@ public class MlbGameDetail {
      * @param awayPlayers ビジターチームの出場選手名
      * @param homePlayers ホームチームの出場選手名
      */
-    public MlbGameDetail(long gamePk, String gameDateJst, String awayTeam, Integer awayScore,
-            String homeTeam, Integer homeScore, String status, String venue,
+    public MlbGameDetail(long gamePk, String gameDateJst, Long awayTeamId, String awayTeam, Integer awayScore,
+            Long homeTeamId, String homeTeam, Integer homeScore, String status, String venue,
             List<MlbInningScore> innings, Integer awayHits, Integer awayErrors,
             Integer homeHits, Integer homeErrors,
             String winningPitcher, String losingPitcher, String savePitcher,
@@ -103,8 +111,10 @@ public class MlbGameDetail {
         // 引数で受け取った試合の基本情報を各フィールドに設定します。
         this.gamePk = gamePk;
         this.gameDateJst = gameDateJst;
+        this.awayTeamId = awayTeamId;
         this.awayTeam = awayTeam;
         this.awayScore = awayScore;
+        this.homeTeamId = homeTeamId;
         this.homeTeam = homeTeam;
         this.homeScore = homeScore;
         this.status = status;
@@ -143,6 +153,26 @@ public class MlbGameDetail {
     public String getGameDateJst() {
         // 保持している日本時間での試合開始日時を返します。
         return gameDateJst;
+    }
+
+    /**
+     * ビジターチームの識別IDを返します。
+     *
+     * @return チーム識別ID。取得できない場合はnull
+     */
+    public Long getAwayTeamId() {
+        // 保持しているビジターチームの識別IDを返します。
+        return awayTeamId;
+    }
+
+    /**
+     * ホームチームの識別IDを返します。
+     *
+     * @return チーム識別ID。取得できない場合はnull
+     */
+    public Long getHomeTeamId() {
+        // 保持しているホームチームの識別IDを返します。
+        return homeTeamId;
     }
 
     /**

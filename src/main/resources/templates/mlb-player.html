@@ -138,7 +138,7 @@
         </section>
 
         <a th:if="${teamId != null}"
-           th:href="@{/mlb/team/{teamId}(teamId=${teamId}, season=${season}, gamePk=${gamePk}, targetDate=${targetDate})}">← チーム詳細へ戻る</a>
+           th:href="@{/mlb/team/{teamId}(teamId=${teamId}, season=${season}, from=${from}, gamePk=${gamePk}, targetDate=${targetDate})}">← チーム詳細へ戻る</a>
         <a th:if="${teamId == null and gamePk != null}"
            th:href="@{/mlb/game/{gamePk}(gamePk=${gamePk}, targetDate=${targetDate})}">← 試合詳細へ戻る</a>
         <a th:if="${teamId == null and gamePk == null}" th:href="@{/mlb}">← 試合一覧へ戻る</a>

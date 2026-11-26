@@ -3,13 +3,16 @@ package uechi;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 /**
  * 【ソースファイル名】
@@ -19,9 +22,10 @@ import org.springframework.web.bind.annotation.RequestParam;
  * /mlbへのGETリクエストに対してMLB試合情報の画面を表示するクラスです。
  * 対象日の試合一覧や指定された試合の詳細情報を取得し、Thymeleafの画面に渡します。
  * 選手詳細画面にはプロフィールと元のチームや試合へ戻るための情報を渡します。
+ * 順位表画面では指定年度を検証し、年度別の地区順位と年度の選択肢を渡します。
  *
  * 【作成日】2026-10-21
- * 【最終更新日】2026-11-25
+ * 【最終更新日】2026-11-26
  *
  * @author masa
  * @version 1.0
@@ -111,6 +115,7 @@ public class MlbController {
      * @param playerId URLのパスに含まれるMLBの選手識別ID
      * @param teamId 戻り先のチームID。未指定の場合はnull
      * @param season チーム詳細で選択した年度。未指定の場合はnull
+     * @param from 戻り先の判定に使用する遷移元。順位表からの場合はstandings
      * @param gamePk 戻り先の試合ID。未指定の場合はnull
      * @param targetDate 一覧へ戻る際の検索対象日。未指定の場合はnull
      * @param model 画面に渡すデータを保持するモデル
@@ -121,14 +126,16 @@ public class MlbController {
             @PathVariable("playerId") long playerId,
             @RequestParam(name = "teamId", required = false) Long teamId,
             @RequestParam(name = "season", required = false) Integer season,
+            @RequestParam(name = "from", required = false) String from,
             @RequestParam(name = "gamePk", required = false) Long gamePk,
             @RequestParam(name = "targetDate", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate,
             Model model) {
-        // 選手IDと戻り先のチームID、選択年度、試合ID、検索対象日を画面へ渡します。
+        // 選手IDと戻り先のチームID、選択年度、遷移元、試合ID、検索対象日を画面へ渡します。
         model.addAttribute("playerId", playerId);
         model.addAttribute("teamId", teamId);
         model.addAttribute("season", season);
+        model.addAttribute("from", from);
         model.addAttribute("gamePk", gamePk);
         model.addAttribute("targetDate", targetDate);
 
@@ -172,6 +179,7 @@ public class MlbController {
      *
      * @param teamId URLのチーム識別ID
      * @param season 指定年度。未指定の場合は対象日または現在年を使用
+     * @param from 戻り先の判定に使用する遷移元。順位表からの場合はstandings
      * @param gamePk 戻り先の試合ID
      * @param targetDate 一覧へ戻る際の検索対象日
      * @param model 画面に渡すモデル
@@ -181,6 +189,7 @@ public class MlbController {
     public String team(
             @PathVariable("teamId") long teamId,
             @RequestParam(name = "season", required = false) String season,
+            @RequestParam(name = "from", required = false) String from,
             @RequestParam(name = "gamePk", required = false) Long gamePk,
             @RequestParam(name = "targetDate", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate targetDate,
@@ -193,6 +202,7 @@ public class MlbController {
         model.addAttribute("gamePk", gamePk);
         model.addAttribute("targetDate", targetDate);
         model.addAttribute("season", selectedSeason);
+        model.addAttribute("from", from);
         model.addAttribute("currentYear", currentYear);
 
         try {
@@ -224,19 +234,29 @@ public class MlbController {
 
 
     /**
-     * 2025年のレギュラーシーズン順位表を画面に渡します。
+     * 指定年度を検証し、レギュラーシーズン順位表と年度の選択肢を画面に渡します。
      *
+     * @param season 指定年度。未指定の場合は2025年を使用
      * @param model 画面に渡すデータを保持するモデル
      * @return 順位表のテンプレートを指定するビュー名
      */
     @GetMapping("/mlb/standings")
-    public String standings(Model model) {
-        // 今回は2025年を固定し、取得結果にかかわらず画面に年度を渡します。
-        int season = 2025;
-        model.addAttribute("season", season);
+    public String standings(
+            @RequestParam(name = "season", required = false) Integer season,
+            Model model) {
+        // 未指定時は2025年を選択し、日本時間の現在年と年度の選択肢を画面に渡します。
+        int selectedSeason = season != null ? season : 2025;
+        int currentYear = prepareStandingsModel(selectedSeason, model);
+
+        // 選択可能な範囲を確認し、不正な年度ではAPIを呼び出さず入力エラーを表示します。
+        if (selectedSeason < 2000 || selectedSeason > currentYear) {
+            model.addAttribute("errorMessage", "年度は2000年から" + currentYear + "年までの整数で指定してください。");
+            return "mlb-standings";
+        }
+
         try {
-            // AL・NLの地区別順位表を取得してモデルへ設定します。
-            List<MlbStandingDivision> divisions = mlbApiService.getStandings(season);
+            // 選択年度のAL・NLの地区別順位表を取得し、空結果も正常な結果として設定します。
+            List<MlbStandingDivision> divisions = mlbApiService.getStandings(selectedSeason);
             model.addAttribute("divisions", divisions);
         } catch (IllegalStateException e) {
             // 取得失敗時も戻るリンクを利用できるよう、同じ画面でエラーを表示します。
@@ -244,6 +264,33 @@ public class MlbController {
         }
         // レギュラーシーズン順位表のビュー名を返します。
         return "mlb-standings";
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    private String handleStandingsTypeMismatch(MethodArgumentTypeMismatchException exception, Model model) {
+        // 順位表の年度以外の型変換エラーは再送出し、Spring MVCの既存のエラー処理に委ねます。
+        if (!"season".equals(exception.getName())
+                || !"standings".equals(exception.getParameter().getMethod().getName())) {
+            throw exception;
+        }
+
+        // 数値に変換できない年度ではAPIを呼び出さず、再選択用のフォームとエラーを表示します。
+        int currentYear = prepareStandingsModel(2025, model);
+        model.addAttribute("errorMessage", "年度は2000年から" + currentYear + "年までの整数で指定してください。");
+        return "mlb-standings";
+    }
+
+    private int prepareStandingsModel(int selectedSeason, Model model) {
+        // 日本時間の現在年から2000年までの年度を、新しい順に生成して画面に渡します。
+        int currentYear = LocalDate.now(ZoneId.of("Asia/Tokyo")).getYear();
+        List<Integer> seasonOptions = IntStream.iterate(currentYear, year -> year >= 2000, year -> year - 1)
+                .boxed().toList();
+        model.addAttribute("season", selectedSeason);
+        model.addAttribute("currentYear", currentYear);
+        model.addAttribute("seasonOptions", seasonOptions);
+
+        // 入力年度の範囲確認にも同じ現在年を使用できるように返します。
+        return currentYear;
     }
 
 }

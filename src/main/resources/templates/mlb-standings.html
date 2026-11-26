@@ -22,6 +22,15 @@
 <body>
 <main>
     <h1>MLB レギュラーシーズン順位表</h1>
+    <form method="get" th:action="@{/mlb/standings}">
+        <label for="season">年度：</label>
+        <select id="season" name="season">
+            <option th:if="${!#lists.contains(seasonOptions, season)}" value="" selected>年度を選択してください</option>
+            <option th:each="year : ${seasonOptions}" th:value="${year}"
+                    th:text="${year}" th:selected="${year == season}"></option>
+        </select>
+        <button type="submit">表示</button>
+    </form>
     <p><span th:text="${season}"></span>年シーズン</p>
     <p th:if="${errorMessage != null}" th:text="${errorMessage}" role="alert"></p>
     <th:block th:if="${divisions != null}">
@@ -46,7 +55,10 @@
                         <tbody>
                             <tr th:each="team : ${division.teams}">
                                 <td th:text="${team.divisionRank != null ? team.divisionRank : '-'}"></td>
-                                <th scope="row" class="team-name" th:text="${team.teamName}"></th>
+                                <th scope="row" class="team-name">
+                                    <a th:href="@{/mlb/team/{teamId}(teamId=${team.teamId}, season=${season}, from=standings)}"
+                                       th:text="${team.teamName}"></a>
+                                </th>
                                 <td th:text="${team.wins != null ? team.wins : '-'}"></td>
                                 <td th:text="${team.losses != null ? team.losses : '-'}"></td>
                                 <td th:text="${team.winningPercentage}"></td>

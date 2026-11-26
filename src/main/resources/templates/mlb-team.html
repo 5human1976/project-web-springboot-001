@@ -42,6 +42,7 @@
                    th:max="${currentYear}" th:value="${season}" step="1" required>
             <input th:if="${gamePk != null}" type="hidden" name="gamePk" th:value="${gamePk}">
             <input th:if="${targetDate != null}" type="hidden" name="targetDate" th:value="${targetDate}">
+            <input th:if="${from == 'standings'}" type="hidden" name="from" value="standings">
             <button type="submit">表示</button>
         </form>
         <p th:if="${rosterErrorMessage != null}" th:text="${rosterErrorMessage}" role="alert"></p>
@@ -55,7 +56,7 @@
                             <td th:text="${player.jerseyNumber}"></td>
                             <td>
                                 <a th:if="${player.playerId != null and player.playerId > 0}"
-                                   th:href="@{/mlb/player/{playerId}(playerId=${player.playerId}, teamId=${teamId}, season=${season}, gamePk=${gamePk}, targetDate=${targetDate})}"
+                                   th:href="@{/mlb/player/{playerId}(playerId=${player.playerId}, teamId=${teamId}, season=${season}, from=${from}, gamePk=${gamePk}, targetDate=${targetDate})}"
                                    th:text="${player.playerName}"></a>
                                 <span th:unless="${player.playerId != null and player.playerId > 0}"
                                       th:text="${player.playerName}"></span>
@@ -67,9 +68,11 @@
             </div>
         </th:block>
     </section>
-    <a th:if="${gamePk != null}"
+    <a th:if="${from == 'standings'}"
+       th:href="@{/mlb/standings(season=${season})}">← 順位表へ戻る</a>
+    <a th:if="${from != 'standings' and gamePk != null}"
        th:href="@{/mlb/game/{gamePk}(gamePk=${gamePk}, targetDate=${targetDate})}">← 試合詳細へ戻る</a>
-    <a th:if="${gamePk == null}" th:href="@{/mlb}">← 試合一覧へ戻る</a>
+    <a th:if="${from != 'standings' and gamePk == null}" th:href="@{/mlb}">← 試合一覧へ戻る</a>
 </main>
 </body>
 </html>

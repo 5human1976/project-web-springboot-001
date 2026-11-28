@@ -25,7 +25,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
  * 順位表画面では指定年度を検証し、年度別の地区順位と年度の選択肢を渡します。
  *
  * 【作成日】2026-10-21
- * 【最終更新日】2026-11-26
+ * 【最終更新日】2026-11-28
  *
  * @author masa
  * @version 1.0
@@ -34,16 +34,32 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 public class MlbController {
 
     // MLB試合情報の取得を担当するServiceを保持します。
-    private final MlbApiService mlbApiService;
+    private final MlbGameService mlbGameService;
+
+    // 順位表の取得を担当するServiceを保持します。
+    private final MlbStandingsService mlbStandingsService;
+
+    // チーム基本情報と年度別ロスターの取得を担当するServiceを保持します。
+    private final MlbTeamService mlbTeamService;
+
+    // 選手プロフィールと年度別成績の取得を担当するServiceを保持します。
+    private final MlbPlayerService mlbPlayerService;
 
     /**
      * 試合情報の取得に使用するServiceを受け取ります。
      *
-     * @param mlbApiService Springが注入するMLB APIのService
+     * @param mlbGameService Springが注入する試合情報のService
+     * @param mlbStandingsService Springが注入する順位表のService
+     * @param mlbTeamService Springが注入するチーム情報のService
+     * @param mlbPlayerService Springが注入する選手情報のService
      */
-    public MlbController(MlbApiService mlbApiService) {
+    public MlbController(MlbGameService mlbGameService, MlbStandingsService mlbStandingsService,
+            MlbTeamService mlbTeamService, MlbPlayerService mlbPlayerService) {
         // Springから渡されたServiceをフィールドに設定します。
-        this.mlbApiService = mlbApiService;
+        this.mlbGameService = mlbGameService;
+        this.mlbStandingsService = mlbStandingsService;
+        this.mlbTeamService = mlbTeamService;
+        this.mlbPlayerService = mlbPlayerService;
     }
 
     /**
@@ -65,7 +81,7 @@ public class MlbController {
         if (targetDate != null) {
             try {
                 // 日本時間で対象日に開始する試合一覧と件数をモデルに設定します。
-                List<MlbGame> games = mlbApiService.getGames(targetDate);
+                List<MlbGame> games = mlbGameService.getGames(targetDate);
                 model.addAttribute("games", games);
                 model.addAttribute("gameCount", games.size());
             } catch (IllegalStateException e) {
@@ -97,7 +113,7 @@ public class MlbController {
 
         try {
             // URLの試合IDをServiceへ渡し、取得した詳細情報をモデルに設定します。
-            MlbGameDetail gameDetail = mlbApiService.getGameDetail(gamePk);
+            MlbGameDetail gameDetail = mlbGameService.getGameDetail(gamePk);
             model.addAttribute("gameDetail", gameDetail);
         } catch (IllegalStateException e) {
             // 取得に失敗した場合は試合IDとエラーメッセージを詳細画面へ渡します。
@@ -141,7 +157,7 @@ public class MlbController {
 
         try {
             // 選手IDでプロフィールを取得し、選手詳細画面に渡します。
-            MlbPlayerProfile playerProfile = mlbApiService.getPlayerProfile(playerId);
+            MlbPlayerProfile playerProfile = mlbPlayerService.getPlayerProfile(playerId);
             model.addAttribute("playerProfile", playerProfile);
         } catch (IllegalStateException e) {
             // 取得失敗を画面に表示し、設定済みの戻り先情報を保持します。
@@ -151,7 +167,7 @@ public class MlbController {
         try {
             // プロフィールとは独立して年度別打撃成績を取得し、0件も正常結果として渡します。
             List<MlbPlayerHittingSeason> hittingSeasons =
-                    mlbApiService.getPlayerHittingYearByYear(playerId);
+                    mlbPlayerService.getPlayerHittingYearByYear(playerId);
             model.addAttribute("hittingSeasons", hittingSeasons);
         } catch (IllegalStateException e) {
             // 成績だけの取得失敗を表示し、プロフィールと戻り先情報を保持します。
@@ -162,7 +178,7 @@ public class MlbController {
         try {
             // 年度別投手成績を独立して取得し、投手成績のない選手も正常結果として扱います。
             List<MlbPlayerPitchingSeason> pitchingSeasons =
-                    mlbApiService.getPlayerPitchingYearByYear(playerId);
+                    mlbPlayerService.getPlayerPitchingYearByYear(playerId);
             model.addAttribute("pitchingSeasons", pitchingSeasons);
         } catch (IllegalStateException e) {
             // 投手成績だけの取得失敗を表示し、他の成績と戻り先情報を保持します。
@@ -207,7 +223,7 @@ public class MlbController {
 
         try {
             // ロスター取得とは独立してチーム基本情報を設定します。
-            model.addAttribute("teamProfile", mlbApiService.getTeamProfile(teamId));
+            model.addAttribute("teamProfile", mlbTeamService.getTeamProfile(teamId));
         } catch (IllegalStateException e) {
             // 基本情報だけの取得失敗を表示します。
             model.addAttribute("errorMessage", "チーム基本情報の取得に失敗しました。");
@@ -219,7 +235,7 @@ public class MlbController {
             if (year < 1876 || year > currentYear) {
                 throw new NumberFormatException("年度が範囲外です。");
             }
-            model.addAttribute("rosterPlayers", mlbApiService.getTeamRoster(teamId, year));
+            model.addAttribute("rosterPlayers", mlbTeamService.getTeamRoster(teamId, year));
         } catch (NumberFormatException e) {
             // 不正な入力を画面に表示し、プロフィールと戻り先を保持します。
             model.addAttribute("rosterErrorMessage", "年度は1876年から" + currentYear + "年までの整数で指定してください。");
@@ -256,7 +272,7 @@ public class MlbController {
 
         try {
             // 選択年度のAL・NLの地区別順位表を取得し、空結果も正常な結果として設定します。
-            List<MlbStandingDivision> divisions = mlbApiService.getStandings(selectedSeason);
+            List<MlbStandingDivision> divisions = mlbStandingsService.getStandings(selectedSeason);
             model.addAttribute("divisions", divisions);
         } catch (IllegalStateException e) {
             // 取得失敗時も戻るリンクを利用できるよう、同じ画面でエラーを表示します。
